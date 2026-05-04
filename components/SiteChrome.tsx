@@ -1,0 +1,53 @@
+import Link from "next/link";
+import { ExternalLink, Home } from "lucide-react";
+import type { SiteConfig } from "@/lib/sites";
+
+export function SiteChrome({ site, children }: { site: SiteConfig; children: React.ReactNode }) {
+  const Icon = site.icon;
+
+  return (
+    <div className="site-shell">
+      <header className="topbar">
+        <div className="topbar-inner">
+          <Link className="brand" href={`/${site.slug}`} aria-label={`${site.name} 홈`}>
+            <span className="brand-mark" aria-hidden="true">
+              <Icon size={19} />
+            </span>
+            <span>{site.name}</span>
+          </Link>
+          <nav className="nav" aria-label="주요 메뉴">
+            <Link href={`/${site.slug}`}>
+              <Home size={15} />
+              홈
+            </Link>
+            {site.nav.map((item) => (
+              <Link key={item.href} href={item.href}>
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
+      </header>
+      {children}
+      <footer className="footer">
+        <div className="container footer-grid">
+          <div>
+            <strong>{site.name}</strong>
+            <p>{site.identity}</p>
+            <p>{site.disclaimer}</p>
+          </div>
+          <div className="footer-links">
+            <Link href={`/${site.slug}/about`}>소개</Link>
+            <Link href={`/${site.slug}/sources`}>출처 안내</Link>
+            <Link href={`/${site.slug}/contact`}>문의하기</Link>
+            <Link href={`/${site.slug}/privacy`}>개인정보처리방침</Link>
+            <Link href={`/${site.slug}/terms`}>이용약관</Link>
+            <a href={`https://${site.domainHint}`} target="_blank" rel="noreferrer">
+              도메인 예시 <ExternalLink size={13} />
+            </a>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
