@@ -51,7 +51,7 @@ export default async function CategoryPage({ params }: Props) {
           <aside className="sidebar">
             <strong>{site.name}</strong>
             {site.categories.map((categoryItem) => (
-              <a key={categoryItem} href={`/${site.slug}/category/${categoryItem}`}>
+              <a key={categoryItem} href={`/category/${encodeURIComponent(categoryItem)}`}>
                 <span>{categoryItem}</span>
                 <span>{site.items.filter((item) => item.category === categoryItem).length}</span>
               </a>

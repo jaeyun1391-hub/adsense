@@ -47,7 +47,7 @@ export default async function GuidesPage({ params }: Props) {
           <aside className="sidebar">
             <strong>가이드 주제</strong>
             {site.guides.map((guide) => (
-              <a key={guide.slug} href={`/${site.slug}/guides/${guide.slug}`}>
+              <a key={guide.slug} href={`/guides/${guide.slug}`}>
                 <span>{guide.category}</span>
               </a>
             ))}

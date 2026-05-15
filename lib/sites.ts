@@ -66,7 +66,7 @@ export type SiteConfig = {
   guides: Guide[];
 };
 
-const today = "2026-05-04";
+const today = "2026-05-15";
 
 function item(
   slug: string,

@@ -116,7 +116,7 @@ export default async function ItemDetailPage({ params }: Props) {
         <main className="container detail-layout">
           <article className="detail-panel">
             <div className="tag-row">
-              <Link className="tag" href={`/${site.slug}/category/${item.category}`}>
+              <Link className="tag" href={`/category/${encodeURIComponent(item.category)}`}>
                 {item.category}
               </Link>
               <span className="tag">{item.region}</span>
@@ -175,7 +175,7 @@ export default async function ItemDetailPage({ params }: Props) {
             <div className="sidebar">
               <strong>관련 태그</strong>
               {item.tags.map((tag) => (
-                <Link key={tag} href={`/${site.slug}/search?q=${encodeURIComponent(tag)}`}>
+                <Link key={tag} href={`/search?q=${encodeURIComponent(tag)}`}>
                   <span>{tag}</span>
                 </Link>
               ))}

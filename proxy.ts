@@ -18,8 +18,14 @@ export function proxy(request: NextRequest) {
   const site = domainToSite[host];
   const { pathname } = request.nextUrl;
 
-  if (!site || pathname.startsWith(`/${site}`) || pathname.startsWith("/_next") || pathname.includes(".")) {
+  if (!site || pathname.startsWith("/_next") || pathname.includes(".")) {
     return NextResponse.next();
+  }
+
+  if (pathname === `/${site}` || pathname.startsWith(`/${site}/`)) {
+    const url = request.nextUrl.clone();
+    url.pathname = pathname === `/${site}` ? "/" : pathname.slice(site.length + 1);
+    return NextResponse.redirect(url, 308);
   }
 
   const url = request.nextUrl.clone();

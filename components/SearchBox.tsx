@@ -4,14 +4,14 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { Search } from "lucide-react";
 
-export function SearchBox({ siteSlug, placeholder }: { siteSlug: string; placeholder: string }) {
+export function SearchBox({ placeholder }: { siteSlug?: string; placeholder: string }) {
   const [query, setQuery] = useState("");
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const target = query.trim();
     if (target) {
-      window.location.href = `/${siteSlug}/search?q=${encodeURIComponent(target)}`;
+      window.location.href = `/search?q=${encodeURIComponent(target)}`;
     }
   }
 

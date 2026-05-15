@@ -94,7 +94,7 @@ export default async function SiteHome({ params }: Props) {
                 <p className="lead">{site.description}</p>
                 <div className="quick-links">
                   {site.categories.map((category) => (
-                    <Link key={category} className="chip" href={`/${site.slug}/category/${category}`}>
+                    <Link key={category} className="chip" href={`/category/${encodeURIComponent(category)}`}>
                       {category}
                     </Link>
                   ))}
@@ -124,7 +124,7 @@ export default async function SiteHome({ params }: Props) {
                   <h2>마감과 확인이 필요한 정보</h2>
                   <p>신청, 예약, 접수 전에 먼저 확인할 항목입니다.</p>
                 </div>
-                <Link className="button secondary" href={`/${site.slug}/items`}>
+                <Link className="button secondary" href="/items">
                   전체 보기 <ArrowRight size={15} />
                 </Link>
               </div>
@@ -159,7 +159,7 @@ export default async function SiteHome({ params }: Props) {
                   <h2>처음 보는 사람을 위한 가이드</h2>
                   <p>단순 목록이 아니라 판단 기준을 함께 제공합니다.</p>
                 </div>
-                <Link className="button secondary" href={`/${site.slug}/guides`}>
+                <Link className="button secondary" href="/guides">
                   가이드 전체 <FileText size={15} />
                 </Link>
               </div>

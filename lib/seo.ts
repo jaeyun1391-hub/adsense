@@ -9,6 +9,20 @@ export function publicUrl(site: SiteConfig, path = "/") {
   return `${siteOrigin(site)}${normalizedPath}`;
 }
 
+export function sitePath(site: SiteConfig, path = "/") {
+  const normalizedPath = path === "/" ? "/" : path.startsWith("/") ? path : `/${path}`;
+
+  if (normalizedPath === `/${site.slug}`) {
+    return "/";
+  }
+
+  if (normalizedPath.startsWith(`/${site.slug}/`)) {
+    return normalizedPath.slice(site.slug.length + 1) || "/";
+  }
+
+  return normalizedPath;
+}
+
 export function localPath(site: SiteConfig, path = "/") {
   const normalizedPath = path === "/" ? "" : path.startsWith("/") ? path : `/${path}`;
   return `/${site.slug}${normalizedPath}`;

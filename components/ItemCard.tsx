@@ -2,9 +2,9 @@ import Link from "next/link";
 import { CalendarDays, MapPin } from "lucide-react";
 import type { InfoItem, SiteConfig } from "@/lib/sites";
 
-export function ItemCard({ site, item }: { site: SiteConfig; item: InfoItem }) {
+export function ItemCard({ item }: { site: SiteConfig; item: InfoItem }) {
   return (
-    <Link className="card" href={`/${site.slug}/items/${item.slug}`}>
+    <Link className="card" href={`/items/${item.slug}`}>
       <div className="tag-row">
         <span className="tag">{item.category}</span>
         <span className="tag">{item.region}</span>
