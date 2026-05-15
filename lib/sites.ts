@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { CSSProperties } from "react";
-import { expandedGuides, expandedItems } from "@/lib/content-expansion";
+import { enrichGuide, enrichInfoItem, expandedGuides, expandedItems } from "@/lib/content-expansion";
 
 export type SiteSlug = "exam" | "events" | "housing" | "business" | "facilities";
 
@@ -917,8 +917,8 @@ const baseSites: SiteConfig[] = [
 ];
 
 export const sites: SiteConfig[] = baseSites.map((site) => {
-  const items = [...site.items, ...expandedItems[site.slug]];
-  const guides = [...site.guides, ...expandedGuides[site.slug]];
+  const items = [...site.items, ...expandedItems[site.slug]].map((item) => enrichInfoItem(site.slug, item));
+  const guides = [...site.guides, ...expandedGuides[site.slug]].map((guideItem) => enrichGuide(site.slug, guideItem));
 
   return {
     ...site,

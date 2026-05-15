@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
+import { RichContent } from "@/components/RichContent";
 import { SiteChrome } from "@/components/SiteChrome";
 import { StructuredData } from "@/components/StructuredData";
 import { getItem, getSite, sites, siteStyle } from "@/lib/sites";
@@ -148,10 +149,7 @@ export default async function ItemDetailPage({ params }: Props) {
             </table>
 
             <div className="content">
-              <h2>핵심 정리</h2>
-              {item.body.map((paragraph) => (
-                <p key={paragraph}>{paragraph}</p>
-              ))}
+              <RichContent blocks={item.body} />
               <h2>자주 묻는 질문</h2>
               {item.faq.map((faq) => (
                 <section key={faq.question}>

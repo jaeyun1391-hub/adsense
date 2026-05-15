@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ExternalLink, Home } from "lucide-react";
+import { Home } from "lucide-react";
 import type { SiteConfig } from "@/lib/sites";
 
 export function SiteChrome({ site, children }: { site: SiteConfig; children: React.ReactNode }) {
@@ -42,9 +42,6 @@ export function SiteChrome({ site, children }: { site: SiteConfig; children: Rea
             <Link href={`/${site.slug}/contact`}>문의하기</Link>
             <Link href={`/${site.slug}/privacy`}>개인정보처리방침</Link>
             <Link href={`/${site.slug}/terms`}>이용약관</Link>
-            <a href={`https://${site.domainHint}`} target="_blank" rel="noreferrer">
-              도메인 예시 <ExternalLink size={13} />
-            </a>
           </div>
         </div>
       </footer>

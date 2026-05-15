@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { RichContent } from "@/components/RichContent";
 import { SiteChrome } from "@/components/SiteChrome";
 import { StructuredData } from "@/components/StructuredData";
 import { getGuide, getSite, sites, siteStyle } from "@/lib/sites";
@@ -104,9 +105,7 @@ export default async function GuideDetailPage({ params }: Props) {
             <h1>{guide.title}</h1>
             <p className="lead">{guide.summary}</p>
             <div className="content">
-              {guide.body.map((paragraph) => (
-                <p key={paragraph}>{paragraph}</p>
-              ))}
+              <RichContent blocks={guide.body} />
               <h2>운영 메모</h2>
               <p>
                 이 가이드는 사용자가 정보를 해석하는 기준을 제공하기 위한 자체 콘텐츠입니다. 세부 조건이나 일정은

@@ -52,11 +52,22 @@ export default async function SourcesPage({ params }: Props) {
               {site.name}은 공식 기관, 주관사, 공공 포털 등 공개적으로 확인 가능한 정보를 기준으로 내용을
               정리합니다. 단순 복사가 아니라 신청자와 방문자가 확인해야 할 조건, 준비물, 주의사항을 함께 설명합니다.
             </p>
+            <p>
+              출처 표기는 사용자가 최종 원문으로 이동할 수 있도록 돕기 위한 장치입니다. 본문은 원문을 그대로
+              옮기지 않고, 실제 이용자가 확인해야 할 순서와 판단 기준을 자체 문장으로 다시 정리합니다.
+            </p>
             <h2>업데이트 기준</h2>
             <p>
               각 상세 페이지에는 업데이트일과 원문 출처를 표시합니다. 일정, 모집 여부, 이용 조건이 바뀔 수 있는
               정보는 운영자가 주기적으로 다시 확인하는 방식으로 관리합니다.
             </p>
+            <h2>출처 선택 원칙</h2>
+            <ul>
+              <li>공식 접수처, 주관기관, 공공기관, 지자체, 운영기관 안내를 우선합니다.</li>
+              <li>개인 블로그, 커뮤니티, 광고 페이지는 단독 근거로 사용하지 않습니다.</li>
+              <li>마감일, 요금, 제출 서류, 운영시간처럼 변경 가능한 정보는 원문 확인을 함께 안내합니다.</li>
+              <li>같은 정보가 여러 곳에 있을 때는 신청 또는 방문자가 실제로 이용하는 공식 페이지를 우선합니다.</li>
+            </ul>
             <h2>주요 출처</h2>
             <table className="info-table">
               <tbody>
@@ -74,8 +85,9 @@ export default async function SourcesPage({ params }: Props) {
             </table>
             <h2>정정 요청</h2>
             <p>
-              오래된 정보나 잘못된 내용을 발견하면 contact@{site.domainHint} 로 원문 링크와 함께 알려주세요.
-              확인 후 필요한 경우 페이지를 수정합니다.
+              오래된 정보나 잘못된 내용을 발견하면{" "}
+              <a href={`mailto:contact@${site.domainHint}`}>contact@{site.domainHint}</a>로 원문 링크와 함께
+              알려주세요. 확인 후 필요한 경우 페이지를 수정합니다.
             </p>
           </article>
           <aside className="notice">{site.disclaimer}</aside>

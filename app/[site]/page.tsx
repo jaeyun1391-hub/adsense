@@ -173,8 +173,9 @@ export default async function SiteHome({ params }: Props) {
 
           <section className="section">
             <div className="container notice">
-              <Clock size={16} /> 업데이트 기준일은 2026년 5월 4일입니다. 사이트 공개 전 실제 운영 데이터로 확장하고,
-              각 상세 페이지의 공식 링크를 재확인하는 흐름으로 운영하는 것을 권장합니다.
+              <Clock size={16} /> 업데이트 기준일은 2026년 5월 15일입니다. 각 글은 공식 출처, 신청 또는 방문 전
+              체크리스트, 자주 묻는 질문을 함께 검토해 보강했습니다. 최종 조건은 운영기관의 최신 공지를 기준으로
+              확인하세요.
             </div>
           </section>
         </main>
