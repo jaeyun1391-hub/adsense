@@ -86,7 +86,7 @@ export default async function TermsPage({ params }: Props) {
               출처를 확인한 뒤 필요한 경우 수정합니다.
             </p>
           </article>
-          <aside className="notice">시행일: 2026년 5월 15일</aside>
+          <aside className="notice">시행일: 2026년 5월 15일 · 최종 업데이트: 2026년 5월 26일</aside>
         </main>
       </SiteChrome>
     </div>

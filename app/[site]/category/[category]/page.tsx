@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { ItemCard } from "@/components/ItemCard";
+import { RichContent } from "@/components/RichContent";
 import { SiteChrome } from "@/components/SiteChrome";
+import { businessCategoryBlocks } from "@/lib/business-content";
 import { getSite, sites, siteStyle } from "@/lib/sites";
 import { publicUrl, siteKeywords } from "@/lib/seo";
 import { notFound } from "next/navigation";
@@ -43,6 +45,7 @@ export default async function CategoryPage({ params }: Props) {
 
   const label = decodeURIComponent(category);
   const items = site.items.filter((item) => item.category === label);
+  const categoryBlocks = site.slug === "business" ? businessCategoryBlocks(label) : [];
 
   return (
     <div style={siteStyle(site)}>
@@ -64,6 +67,11 @@ export default async function CategoryPage({ params }: Props) {
                 <p className="muted">{items.length}개의 정보를 정리했습니다.</p>
               </div>
             </div>
+            {categoryBlocks.length ? (
+              <article className="notice content category-brief">
+                <RichContent blocks={categoryBlocks} />
+              </article>
+            ) : null}
             <div className="grid two">
               {items.map((item) => (
                 <ItemCard key={item.slug} site={site} item={item} />

@@ -104,6 +104,12 @@ export default async function GuideDetailPage({ params }: Props) {
             </div>
             <h1>{guide.title}</h1>
             <p className="lead">{guide.summary}</p>
+            {site.slug === "business" ? (
+              <p className="editor-note">
+                작성·검토: 사장님지원캘린더 편집팀 · 검토 기준일 {guide.updatedAt} · 공고 해석 기준: 공식 공고문과
+                신청 시스템
+              </p>
+            ) : null}
             <div className="content">
               <RichContent blocks={guide.body} />
               <h2>운영 메모</h2>

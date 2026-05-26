@@ -82,7 +82,7 @@ export default async function PrivacyPage({ params }: Props) {
               <a href={`mailto:contact@${site.domainHint}`}>contact@{site.domainHint}</a>로 연락해 주세요.
             </p>
           </article>
-          <aside className="notice">시행일: 2026년 5월 15일</aside>
+          <aside className="notice">시행일: 2026년 5월 15일 · 최종 업데이트: 2026년 5월 26일</aside>
         </main>
       </SiteChrome>
     </div>

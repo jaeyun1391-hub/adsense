@@ -1,4 +1,5 @@
 import type { Guide, InfoItem, SiteSlug } from "@/lib/sites";
+import { enhanceBusinessGuide, enhanceBusinessItem } from "@/lib/business-content";
 
 const updatedAt = "2026-05-04";
 
@@ -417,6 +418,10 @@ function guideDepthTail(site: SiteSlug, title: string) {
 }
 
 export function enrichInfoItem(site: SiteSlug, item: InfoItem): InfoItem {
+  if (site === "business") {
+    return enhanceBusinessItem(item);
+  }
+
   return {
     ...item,
     body: richBodyFor(site, {
@@ -440,6 +445,10 @@ export function enrichInfoItem(site: SiteSlug, item: InfoItem): InfoItem {
 }
 
 export function enrichGuide(site: SiteSlug, guide: Guide): Guide {
+  if (site === "business") {
+    return enhanceBusinessGuide(guide);
+  }
+
   const alreadyStructured = guide.body.some((block) => block.startsWith("## "));
   const seed: GuideSeed = {
     slug: guide.slug,

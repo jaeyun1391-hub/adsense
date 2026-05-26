@@ -317,6 +317,15 @@ h1 {
   color: var(--muted);
 }
 
+.editor-note {
+  border-left: 3px solid var(--accent);
+  margin: 12px 0 18px;
+  padding-left: 12px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
 .card h3 {
   margin-bottom: 0;
   font-size: 18px;
@@ -410,6 +419,14 @@ h1 {
   padding: 16px;
   color: var(--muted);
   line-height: 1.65;
+}
+
+.category-brief {
+  margin-bottom: 18px;
+}
+
+.category-brief h2:first-child {
+  margin-top: 0;
 }
 
 .footer {
