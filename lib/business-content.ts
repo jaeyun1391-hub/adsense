@@ -1451,24 +1451,94 @@ businessProfiles["business-closure-restart"] = {
   ]
 };
 
-function makeBusinessBody(profile: BusinessProfile) {
+function businessBodyHeadings(item: InfoItem) {
+  const headingsByCategory: Record<string, string[]> = {
+    정책자금: [
+      "이 자금을 볼 때 먼저 나눌 것",
+      "접수 창구와 예산 소진",
+      "은행·보증·세금 서류",
+      "심사에서 막히는 지점",
+      "공식 공고에서 확인할 문장",
+      "편집자가 남긴 판단 메모",
+      "상담 전 점검표",
+      "상담 뒤 남겨둘 기록"
+    ],
+    창업지원: [
+      "내 단계와 맞는 공고인지",
+      "접수 일정과 발표까지의 흐름",
+      "사업계획서와 증빙",
+      "평가에서 약해지는 부분",
+      "공식 신청 화면에서 볼 위치",
+      "신청자 관점 메모",
+      "제출 전 점검표",
+      "버전별로 보관할 자료"
+    ],
+    지역지원: [
+      "우리 사업장에 해당되는지",
+      "짧은 접수기간 대응",
+      "견적서·사진·자부담 계산",
+      "사전 승인과 정산 리스크",
+      "지자체 공고에서 볼 항목",
+      "현장형 사업 메모",
+      "접수 전 체크",
+      "나중에 증빙할 기록"
+    ],
+    "교육·컨설팅": [
+      "듣기 전에 준비할 것",
+      "신청 기간과 수료 기준",
+      "상담·실습 자료",
+      "수강만 하고 끝나는 위험",
+      "공식 교육 안내 확인",
+      "실행 중심 메모",
+      "참여 전 점검표",
+      "교육 후 남길 기록"
+    ],
+    "업종별 지원": [
+      "업종과 현장 기준 먼저 보기",
+      "공사·폐업·개선 일정",
+      "현장 사진과 증빙 서류",
+      "제외되기 쉬운 지출",
+      "공식 공고 확인 지점",
+      "현장 적용 메모",
+      "신청 전 점검표",
+      "결과보고용 기록"
+    ]
+  };
+
+  return (
+    headingsByCategory[item.category] ?? [
+      "먼저 판단할 내용",
+      "기간과 접수 흐름",
+      "준비할 자료",
+      "보완이 나오는 지점",
+      "공식 출처 확인",
+      "편집 메모",
+      "신청 전 점검표",
+      "보관할 기록"
+    ]
+  );
+}
+
+function makeBusinessBody(profile: BusinessProfile, item: InfoItem) {
+  const headings = businessBodyHeadings(item);
+
   return [
-    "## 신청 판단 요약",
+    `## ${headings[0]}`,
     profile.brief,
     profile.target,
-    "## 기간과 마감 체크",
+    `## ${headings[1]}`,
     profile.deadline,
-    "## 준비 서류와 숫자",
+    `## ${headings[2]}`,
     profile.documents,
-    "## 탈락·보완 포인트",
+    `## ${headings[3]}`,
     profile.risk,
-    "## 공식 출처 확인 항목",
+    `## ${headings[4]}`,
     profile.official,
-    "## 편집팀 검토 메모",
+    `## ${headings[5]}`,
     profile.editor,
-    "## 신청 전 체크리스트",
+    `## ${headings[6]}`,
     profile.checklist.map((item) => `- ${item}`).join("\n"),
-    "## 기록해 둘 내용",
+    `## ${headings[7]}`,
     profile.records
   ];
 }
@@ -1493,7 +1563,7 @@ export function enhanceBusinessItem(item: InfoItem): InfoItem {
     updatedAt: businessUpdatedAt,
     tags: profile.tags,
     details: profile.details,
-    body: makeBusinessBody(profile),
+    body: makeBusinessBody(profile, item),
     faq: profile.faq
   };
 }

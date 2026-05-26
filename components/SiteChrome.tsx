@@ -39,7 +39,9 @@ export function SiteChrome({ site, children }: { site: SiteConfig; children: Rea
           </div>
           <div className="footer-links">
             <Link href="/about">소개</Link>
+            <Link href="/editorial-policy">편집 기준</Link>
             <Link href="/sources">출처 안내</Link>
+            <Link href="/updates">업데이트 기록</Link>
             <Link href="/contact">문의하기</Link>
             <Link href="/privacy">개인정보처리방침</Link>
             <Link href="/terms">이용약관</Link>

@@ -843,7 +843,7 @@ const baseSites: SiteConfig[] = [
     mark: "사",
     theme: { accent: "#7c2d12", accent2: "#047857", weak: "#fff3ed", bg: "#faf8f5" },
     icon: BriefcaseBusiness,
-    headline: "소상공인 지원사업과 마감일을 놓치지 마세요",
+    headline: "사업자 지원사업 공고 캘린더",
     description: "정책자금, 창업지원, 교육, 컨설팅, 업종별 지원사업을 사업자 관점으로 정리하는 모집공고 캘린더입니다.",
     identity: "사장님지원캘린더는 공고문을 대상, 기간, 서류, 신청처 중심으로 다시 정리합니다.",
     nav: [

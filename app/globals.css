@@ -421,6 +421,17 @@ h1 {
   line-height: 1.65;
 }
 
+.business-home-note h2 {
+  margin: 0 0 10px;
+  color: var(--ink);
+  font-size: 22px;
+}
+
+.business-home-note ul {
+  margin: 0 0 14px;
+  padding-left: 20px;
+}
+
 .category-brief {
   margin-bottom: 18px;
 }

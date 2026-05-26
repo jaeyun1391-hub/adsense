@@ -42,7 +42,7 @@ export default async function PrivacyPage({ params }: Props) {
           <article className="detail-panel content">
             <h1>개인정보처리방침</h1>
             <p>
-              {site.name}은 현재 회원가입 없이 공개 정보를 제공하며, 문의 처리에 필요한 최소 정보만 수집합니다.
+              이 사이트는 현재 회원가입 없이 공개 정보를 제공하며, 문의 처리에 필요한 최소 정보만 수집합니다.
               이 방침은 개인정보 보호와 광고·분석 도구 사용 가능성을 방문자에게 알리기 위해 작성했습니다.
             </p>
             <h2>수집 항목</h2>
@@ -68,7 +68,7 @@ export default async function PrivacyPage({ params }: Props) {
             </p>
             <h2>외부 링크</h2>
             <p>
-              {site.name}에는 공식 기관, 주관사, 공공 포털 등 외부 사이트 링크가 포함됩니다. 외부 사이트에서는
+              본문에는 공식 기관, 주관사, 공공 포털 등 외부 사이트 링크가 포함됩니다. 외부 사이트에서는
               해당 사이트의 개인정보처리방침과 이용약관이 적용됩니다.
             </p>
             <h2>이용자의 선택권</h2>

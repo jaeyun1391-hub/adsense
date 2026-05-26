@@ -49,7 +49,7 @@ export default async function SourcesPage({ params }: Props) {
           <article className="detail-panel content">
             <h1>출처 안내</h1>
             <p>
-              {site.name}은 공식 기관, 주관사, 공공 포털 등 공개적으로 확인 가능한 정보를 기준으로 내용을
+              이 사이트는 공식 기관, 주관사, 공공 포털 등 공개적으로 확인 가능한 정보를 기준으로 내용을
               정리합니다. 단순 복사가 아니라 신청자와 방문자가 확인해야 할 조건, 준비물, 주의사항을 함께 설명합니다.
             </p>
             <p>

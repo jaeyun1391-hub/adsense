@@ -49,6 +49,15 @@ export default async function SiteHome({ params }: Props) {
 
   const featured = site.items.slice(0, 3);
   const latest = site.items.slice(2, 5);
+  const updatedAtLabel = site.slug === "business" ? "2026년 5월 26일" : "2026년 5월 15일";
+  const businessHomeNotes =
+    site.slug === "business"
+      ? [
+          "정책자금 글은 직접대출·대리대출, 보증·금융기관 절차, 세금 체납 여부를 분리해 다시 정리했습니다.",
+          "지역지원 글은 사업장 소재지, 자부담, 부가세, 승인 전 지출 가능 여부를 먼저 보도록 구성했습니다.",
+          "교육·컨설팅 글은 수강 자체보다 상품자료, 원가표, 상담 질문지처럼 실제 실행에 필요한 준비물을 강조했습니다."
+        ]
+      : [];
 
   return (
     <div style={siteStyle(site)}>
@@ -136,6 +145,22 @@ export default async function SiteHome({ params }: Props) {
             </div>
           </section>
 
+          {businessHomeNotes.length ? (
+            <section className="section">
+              <div className="container notice business-home-note">
+                <h2>이번 점검에서 보강한 기준</h2>
+                <ul>
+                  {businessHomeNotes.map((note) => (
+                    <li key={note}>{note}</li>
+                  ))}
+                </ul>
+                <Link className="button secondary" href="/updates">
+                  업데이트 기록 보기 <ArrowRight size={15} />
+                </Link>
+              </div>
+            </section>
+          ) : null}
+
           <section className="section">
             <div className="container">
               <div className="section-head">
@@ -173,7 +198,7 @@ export default async function SiteHome({ params }: Props) {
 
           <section className="section">
             <div className="container notice">
-              <Clock size={16} /> 업데이트 기준일은 2026년 5월 15일입니다. 각 글은 공식 출처, 신청 또는 방문 전
+              <Clock size={16} /> 업데이트 기준일은 {updatedAtLabel}입니다. 각 글은 공식 출처, 신청 또는 방문 전
               체크리스트, 자주 묻는 질문을 함께 검토해 보강했습니다. 최종 조건은 운영기관의 최신 공지를 기준으로
               확인하세요.
             </div>

@@ -42,7 +42,7 @@ export default async function TermsPage({ params }: Props) {
           <article className="detail-panel content">
             <h1>이용약관</h1>
             <p>
-              {site.name}은 공개 정보와 자체 해설을 제공하는 정보 서비스입니다. 사용자는 제공된 정보를 참고용으로
+              이 사이트는 공개 정보와 자체 해설을 제공하는 정보 서비스입니다. 사용자는 제공된 정보를 참고용으로
               활용할 수 있으며, 최종 판단과 신청은 공식 기관의 안내를 기준으로 해야 합니다.
             </p>
             <h2>서비스의 성격</h2>
@@ -64,7 +64,7 @@ export default async function TermsPage({ params }: Props) {
             </p>
             <h2>콘텐츠 이용</h2>
             <p>
-              {site.name}의 자체 설명, 체크리스트, 편집 자료를 무단으로 대량 복제하거나 자동 수집해 재배포하는
+              사이트의 자체 설명, 체크리스트, 편집 자료를 무단으로 대량 복제하거나 자동 수집해 재배포하는
               행위를 금지합니다. 짧은 인용이 필요한 경우 출처와 링크를 함께 표시해 주세요.
             </p>
             <h2>금지 행위</h2>
