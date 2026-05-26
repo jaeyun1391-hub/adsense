@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteChrome } from "@/components/SiteChrome";
+import { updateLogItems } from "@/lib/site-depth-content";
 import { getSite, sites, siteStyle } from "@/lib/sites";
 import { publicUrl } from "@/lib/seo";
 import { notFound } from "next/navigation";
@@ -41,20 +42,7 @@ export default async function UpdatesPage({ params }: Props) {
   if (!site) notFound();
 
   const recentItems = site.items.slice(0, 6);
-  const businessUpdates =
-    site.slug === "business"
-      ? [
-          "정책자금 글에서 직접대출·대리대출, 보증기관, 세금 체납, 예산 소진 확인 항목을 분리했습니다.",
-          "창업지원 글에서 업력, 사업계획서, 사업화 자금 사용 가능 항목, 평가 보완 포인트를 보강했습니다.",
-          "지역지원 글에서 사업장 소재지, 자부담, 부가세, 승인 전 지출 가능 여부, 정산 증빙을 추가했습니다.",
-          "교육·컨설팅 글에서 수강 전 준비물, 상담 질문지, 교육 후 실행 기록을 더했습니다.",
-          "상세 글 30개와 가이드 10개를 같은 문장 반복이 아니라 주제별 확인 순서로 다시 정리했습니다."
-        ]
-      : [
-          "상세 정보와 가이드 페이지의 출처, 기준일, 확인 순서를 점검했습니다.",
-          "카테고리별 목록과 상세 페이지 연결 상태를 확인했습니다.",
-          "개인정보처리방침, 이용약관, 소개, 출처 안내 접근성을 점검했습니다."
-        ];
+  const updates = updateLogItems(site.slug);
 
   return (
     <div style={siteStyle(site)}>
@@ -68,7 +56,7 @@ export default async function UpdatesPage({ params }: Props) {
             </p>
             <h2>2026년 5월 26일 점검</h2>
             <ul>
-              {businessUpdates.map((update) => (
+              {updates.map((update) => (
                 <li key={update}>{update}</li>
               ))}
             </ul>
@@ -89,7 +77,7 @@ export default async function UpdatesPage({ params }: Props) {
             </table>
             <h2>다음 점검에서 보는 항목</h2>
             <p>
-              마감일이 지난 공고, 접수처가 바뀐 공고, 예산 소진으로 닫힌 공고, 제출 서류가 바뀐 공고를 우선
+              일정이 지난 정보, 접수처나 운영기관이 바뀐 정보, 조건·요금·서류·운영시간이 달라진 정보를 우선
               확인합니다. 사용자가 정정 요청을 보내면 공식 원문을 확인한 뒤 필요한 부분을 반영합니다.
             </p>
           </article>

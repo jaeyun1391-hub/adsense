@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { ItemCard } from "@/components/ItemCard";
 import { RichContent } from "@/components/RichContent";
 import { SiteChrome } from "@/components/SiteChrome";
-import { businessCategoryBlocks } from "@/lib/business-content";
+import { siteCategoryBlocks } from "@/lib/site-depth-content";
 import { getSite, sites, siteStyle } from "@/lib/sites";
 import { publicUrl, siteKeywords } from "@/lib/seo";
 import { notFound } from "next/navigation";
@@ -45,7 +45,7 @@ export default async function CategoryPage({ params }: Props) {
 
   const label = decodeURIComponent(category);
   const items = site.items.filter((item) => item.category === label);
-  const categoryBlocks = site.slug === "business" ? businessCategoryBlocks(label) : [];
+  const categoryBlocks = siteCategoryBlocks(site.slug, label);
 
   return (
     <div style={siteStyle(site)}>

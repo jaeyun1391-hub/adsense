@@ -124,11 +124,9 @@ export default async function ItemDetailPage({ params }: Props) {
             </div>
             <h1>{item.title}</h1>
             <p className="lead">{item.summary}</p>
-            {site.slug === "business" ? (
-              <p className="editor-note">
-                작성·검토: 사장님지원캘린더 편집팀 · 검토 기준일 {item.updatedAt} · 기준 출처: {item.source}
-              </p>
-            ) : null}
+            <p className="editor-note">
+              작성·검토: {site.name} 편집팀 · 검토 기준일 {item.updatedAt} · 기준 출처: {item.source}
+            </p>
 
             <table className="info-table">
               <tbody>

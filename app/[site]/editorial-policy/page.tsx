@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { RichContent } from "@/components/RichContent";
 import { SiteChrome } from "@/components/SiteChrome";
+import { editorialPolicyBlocks } from "@/lib/site-depth-content";
 import { getSite, sites, siteStyle } from "@/lib/sites";
 import { publicUrl } from "@/lib/seo";
 import { notFound } from "next/navigation";
@@ -38,6 +40,7 @@ export default async function EditorialPolicyPage({ params }: Props) {
   const { site: slug } = await params;
   const site = getSite(slug);
   if (!site) notFound();
+  const policyBlocks = editorialPolicyBlocks(site.slug);
 
   return (
     <div style={siteStyle(site)}>
@@ -61,20 +64,7 @@ export default async function EditorialPolicyPage({ params }: Props) {
               <li>바뀔 수 있는 정보에는 업데이트 기준일과 공식 출처를 함께 표시합니다.</li>
               <li>원문이 애매한 부분은 단정하지 않고 사용자가 다시 확인해야 할 질문 형태로 남깁니다.</li>
             </ul>
-            {site.slug === "business" ? (
-              <>
-                <h2>business100.co.kr 추가 기준</h2>
-                <p>
-                  사업자 지원 정보는 돈과 사업 판단에 영향을 줄 수 있어, 단순한 모집공고 요약보다 더 보수적으로
-                  다룹니다. 정책자금은 대출·보증·금융기관 심사를 나눠 설명하고, 시설개선형 지원은 승인 전 지출,
-                  자부담, 부가세, 정산 증빙을 따로 확인합니다.
-                </p>
-                <p>
-                  창업지원 글은 아이디어 소개보다 업력, 사업계획서, 평가 기준, 사업비 집행 가능 항목을 먼저
-                  봅니다. 교육·컨설팅 글은 수강 여부보다 실제 실행에 필요한 자료와 후속 점검을 중심으로 정리합니다.
-                </p>
-              </>
-            ) : null}
+            {policyBlocks.length ? <RichContent blocks={policyBlocks} /> : null}
             <h2>정정 기준</h2>
             <p>
               오래된 일정, 마감된 공고, 잘못된 기관명, 변경된 제출 서류를 발견하면 공식 원문을 기준으로 수정합니다.

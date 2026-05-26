@@ -6,6 +6,7 @@ import { ItemCard } from "@/components/ItemCard";
 import { SearchBox } from "@/components/SearchBox";
 import { SiteChrome } from "@/components/SiteChrome";
 import { StructuredData } from "@/components/StructuredData";
+import { homeReviewNotes } from "@/lib/site-depth-content";
 import { getSite, sites, siteStyle } from "@/lib/sites";
 import { publicUrl, siteKeywords } from "@/lib/seo";
 import { notFound } from "next/navigation";
@@ -49,15 +50,8 @@ export default async function SiteHome({ params }: Props) {
 
   const featured = site.items.slice(0, 3);
   const latest = site.items.slice(2, 5);
-  const updatedAtLabel = site.slug === "business" ? "2026년 5월 26일" : "2026년 5월 15일";
-  const businessHomeNotes =
-    site.slug === "business"
-      ? [
-          "정책자금 글은 직접대출·대리대출, 보증·금융기관 절차, 세금 체납 여부를 분리해 다시 정리했습니다.",
-          "지역지원 글은 사업장 소재지, 자부담, 부가세, 승인 전 지출 가능 여부를 먼저 보도록 구성했습니다.",
-          "교육·컨설팅 글은 수강 자체보다 상품자료, 원가표, 상담 질문지처럼 실제 실행에 필요한 준비물을 강조했습니다."
-        ]
-      : [];
+  const updatedAtLabel = "2026년 5월 26일";
+  const reviewNotes = homeReviewNotes(site.slug);
 
   return (
     <div style={siteStyle(site)}>
@@ -145,12 +139,12 @@ export default async function SiteHome({ params }: Props) {
             </div>
           </section>
 
-          {businessHomeNotes.length ? (
+          {reviewNotes.length ? (
             <section className="section">
               <div className="container notice business-home-note">
                 <h2>이번 점검에서 보강한 기준</h2>
                 <ul>
-                  {businessHomeNotes.map((note) => (
+                  {reviewNotes.map((note) => (
                     <li key={note}>{note}</li>
                   ))}
                 </ul>
