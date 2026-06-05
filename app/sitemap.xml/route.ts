@@ -40,7 +40,7 @@ export async function GET() {
   const host = (await headers()).get("host") ?? "";
   const site = siteForHost(host);
   const urls = site ? urlsForSite(site) : sites.flatMap(urlsForSite);
-  const lastModified = "2026-05-26";
+  const lastModified = "2026-06-05";
 
   const body = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { RichContent } from "@/components/RichContent";
 import { SiteChrome } from "@/components/SiteChrome";
+import { housingNextReviewDate, housingReviewDate } from "@/lib/housing-platform-content";
 import { editorialPolicyBlocks } from "@/lib/site-depth-content";
 import { getSite, sites, siteStyle } from "@/lib/sites";
 import { publicUrl } from "@/lib/seo";
@@ -43,7 +44,7 @@ export default async function EditorialPolicyPage({ params }: Props) {
   const policyBlocks = editorialPolicyBlocks(site.slug);
 
   return (
-    <div style={siteStyle(site)}>
+    <div className={site.slug === "housing" ? "money-platform" : undefined} style={siteStyle(site)}>
       <SiteChrome site={site}>
         <main className="container detail-layout">
           <article className="detail-panel content">
@@ -64,6 +65,27 @@ export default async function EditorialPolicyPage({ params }: Props) {
               <li>바뀔 수 있는 정보에는 업데이트 기준일과 공식 출처를 함께 표시합니다.</li>
               <li>원문이 애매한 부분은 단정하지 않고 사용자가 다시 확인해야 할 질문 형태로 남깁니다.</li>
             </ul>
+            {site.slug === "housing" ? (
+              <>
+                <h2>money1000 주거지원 검토 기준</h2>
+                <p>
+                  주거지원 정보는 금전 지원, 임대주택 선정, 전세대출 상담처럼 개인 상황에 영향을 줄 수 있으므로
+                  과장 표현을 쓰지 않습니다. “무조건 가능”, “확정 지급”처럼 결과를 단정하는 문구를 피하고,
+                  신청자가 공식 공고와 상담 창구에서 다시 확인해야 할 질문을 함께 남깁니다.
+                </p>
+                <ul>
+                  <li>월세지원 글은 계약서, 전입신고, 납부 증빙, 소득 기준을 함께 확인합니다.</li>
+                  <li>전세·보증금 글은 계약 전 보증 가능성, 은행 상담 서류, 위험 신호를 분리합니다.</li>
+                  <li>임대주택 글은 공급 유형, 순위 조건, 예비입주자 흐름을 공고 읽는 순서대로 정리합니다.</li>
+                  <li>서류 글은 발급일, 표시 옵션, 주소 일치 여부, 보완 요청 가능성을 중심으로 검토합니다.</li>
+                </ul>
+                <p>
+                  money1000 콘텐츠의 현재 검토 기준일은 {housingReviewDate}이며, 다음 정기 검토 예정일은{" "}
+                  {housingNextReviewDate}입니다. 다만 접수 마감, 예산 소진, 공고 변경이 확인되면 정기 검토일
+                  전에도 수정할 수 있습니다.
+                </p>
+              </>
+            ) : null}
             {policyBlocks.length ? <RichContent blocks={policyBlocks} /> : null}
             <h2>정정 기준</h2>
             <p>
@@ -72,7 +94,7 @@ export default async function EditorialPolicyPage({ params }: Props) {
             </p>
           </article>
           <aside className="notice">
-            편집 기준 최종 업데이트: 2026년 5월 26일
+            편집 기준 최종 업데이트: {site.slug === "housing" ? housingReviewDate : "2026년 5월 26일"}
             <br />
             문의: <a href={`mailto:contact@${site.domainHint}`}>contact@{site.domainHint}</a>
           </aside>

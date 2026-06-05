@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteChrome } from "@/components/SiteChrome";
+import { housingUpdateLog } from "@/lib/housing-platform-content";
 import { updateLogItems } from "@/lib/site-depth-content";
 import { getSite, sites, siteStyle } from "@/lib/sites";
 import { publicUrl } from "@/lib/seo";
@@ -41,11 +42,12 @@ export default async function UpdatesPage({ params }: Props) {
   const site = getSite(slug);
   if (!site) notFound();
 
-  const recentItems = site.items.slice(0, 6);
-  const updates = updateLogItems(site.slug);
+  const recentItems = site.items.slice(0, site.slug === "housing" ? 8 : 6);
+  const updates = site.slug === "housing" ? housingUpdateLog() : updateLogItems(site.slug);
+  const updateHeading = site.slug === "housing" ? "2026년 6월 5일 최종 구조 점검" : "2026년 5월 26일 점검";
 
   return (
-    <div style={siteStyle(site)}>
+    <div className={site.slug === "housing" ? "money-platform" : undefined} style={siteStyle(site)}>
       <SiteChrome site={site}>
         <main className="container detail-layout">
           <article className="detail-panel content">
@@ -54,12 +56,22 @@ export default async function UpdatesPage({ params }: Props) {
               이 페이지는 최근 어떤 기준으로 콘텐츠를 손본 것인지 남기는 운영 기록입니다. 단순히
               날짜만 바꾸지 않고, 사용자가 실제로 확인해야 하는 항목이 늘어났는지를 기준으로 기록합니다.
             </p>
-            <h2>2026년 5월 26일 점검</h2>
+            <h2>{updateHeading}</h2>
             <ul>
               {updates.map((update) => (
                 <li key={update}>{update}</li>
               ))}
             </ul>
+            {site.slug === "housing" ? (
+              <>
+                <h2>money1000 추가 점검 기록</h2>
+                <p>
+                  이번 점검에서는 단순 글 수보다 사이트가 실제 운영되는 주거지원 플랫폼처럼 보이는지를 우선
+                  확인했습니다. 홈 화면, 카테고리, 상세 글, 가이드, 출처 페이지가 서로 연결되도록 바꾸고,
+                  각 상세 글에는 검토일, 다음 검토 예정일, 공식 출처, 신청 전 확인 순서를 함께 표시했습니다.
+                </p>
+              </>
+            ) : null}
             <h2>이번에 다시 확인한 대표 페이지</h2>
             <table className="info-table">
               <tbody>

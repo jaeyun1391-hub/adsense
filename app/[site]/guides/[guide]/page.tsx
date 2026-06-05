@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { HousingGuideDetail } from "@/components/HousingPlatform";
 import { RichContent } from "@/components/RichContent";
 import { SiteChrome } from "@/components/SiteChrome";
 import { StructuredData } from "@/components/StructuredData";
@@ -46,6 +47,10 @@ export default async function GuideDetailPage({ params }: Props) {
   if (!site) notFound();
   const guide = getGuide(site, guideSlug);
   if (!guide) notFound();
+
+  if (site.slug === "housing") {
+    return <HousingGuideDetail site={site} guide={guide} />;
+  }
 
   return (
     <div style={siteStyle(site)}>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ExternalLink } from "lucide-react";
 import { SiteChrome } from "@/components/SiteChrome";
+import { housingSourceGroups } from "@/lib/housing-platform-content";
 import { getSite, sites, siteStyle } from "@/lib/sites";
 import { publicUrl } from "@/lib/seo";
 import { notFound } from "next/navigation";
@@ -41,9 +42,10 @@ export default async function SourcesPage({ params }: Props) {
   if (!site) notFound();
 
   const sources = Array.from(new Map(site.items.map((item) => [item.sourceUrl, item])).values());
+  const housingGroups = site.slug === "housing" ? housingSourceGroups() : [];
 
   return (
-    <div style={siteStyle(site)}>
+    <div className={site.slug === "housing" ? "money-platform" : undefined} style={siteStyle(site)}>
       <SiteChrome site={site}>
         <main className="container detail-layout">
           <article className="detail-panel content">
@@ -81,6 +83,35 @@ export default async function SourcesPage({ params }: Props) {
                   시설개선·디자인·간판·안전 사업은 접수기간, 보조율, 자부담, 승인 전 지출 가능 여부,
                   정산 증빙을 함께 확인합니다.
                 </p>
+              </>
+            ) : null}
+            {housingGroups.length ? (
+              <>
+                <h2>청년 주거지원 출처 확인 방식</h2>
+                <p>
+                  money1000.co.kr은 주거복지 포털, 지자체 공고, 공공임대 청약 시스템, 전세·보증금 관련
+                  공공기관 안내를 나누어 확인합니다. 같은 청년 주거지원이라도 접수 창구와 심사 기준이 다르기
+                  때문에 원문 링크만 모으지 않고, 신청자가 실제로 확인해야 할 조건과 서류를 함께 정리합니다.
+                </p>
+                <p>
+                  금전 지원과 대출 판단은 개인의 소득, 계약 조건, 보증 가능성, 예산 상황에 따라 달라질 수
+                  있습니다. 따라서 각 글에서는 공식 출처 링크와 함께 상담 전 질문, 보완 서류, 제외 조건을
+                  분리해 안내합니다.
+                </p>
+                {housingGroups.map((group) => (
+                  <section key={group.title}>
+                    <h3>{group.title}</h3>
+                    <ul>
+                      {group.links.map((link) => (
+                        <li key={link.url}>
+                          <a href={link.url} target="_blank" rel="noreferrer">
+                            {link.label} <ExternalLink size={13} />
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                ))}
               </>
             ) : null}
             <h2>주요 출처</h2>

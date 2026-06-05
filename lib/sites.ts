@@ -30,6 +30,12 @@ export type InfoItem = {
   details: Record<string, string>;
   body: string[];
   faq: { question: string; answer: string }[];
+  thumbnail?: string;
+  readingTime?: string;
+  audience?: string;
+  keyChecks?: string[];
+  sourceLinks?: { label: string; url: string }[];
+  nextReviewAt?: string;
 };
 
 export type Guide = {
@@ -39,6 +45,12 @@ export type Guide = {
   category: string;
   updatedAt: string;
   body: string[];
+  thumbnail?: string;
+  readingTime?: string;
+  audience?: string;
+  keyChecks?: string[];
+  sourceLinks?: { label: string; url: string }[];
+  nextReviewAt?: string;
 };
 
 export type SiteConfig = {
@@ -66,7 +78,7 @@ export type SiteConfig = {
   guides: Guide[];
 };
 
-const today = "2026-05-26";
+const today = "2026-06-05";
 
 function item(
   slug: string,
@@ -802,7 +814,7 @@ const baseSites: SiteConfig[] = [
     name: "청년주거도움",
     domainHint: "money1000.co.kr",
     mark: "집",
-    theme: { accent: "#0f766e", accent2: "#7c3aed", weak: "#e6f6f4", bg: "#f6faf9" },
+    theme: { accent: "#0d5f54", accent2: "#20b894", weak: "#e6f5ee", bg: "#f8faf7" },
     icon: Building2,
     headline: "청년 주거지원 조건과 신청 서류를 쉽게 확인하세요",
     description: "월세지원, 전세·보증금, 임대주택, 지역별 주거정책을 신청자 관점으로 정리하는 청년 주거 자료실입니다.",
@@ -815,8 +827,8 @@ const baseSites: SiteConfig[] = [
     ],
     categories: ["월세지원", "전세·보증금", "임대주택", "지역별 지원", "신청서류"],
     stats: [
-      { label: "지원 정보", value: "5" },
-      { label: "서류 설명", value: "2" },
+      { label: "주거지원 글", value: "40+" },
+      { label: "검토 가이드", value: "12+" },
       { label: "공식 출처", value: "100%" }
     ],
     searchPlaceholder: "월세, 전세, 임대주택, 지역명 검색",

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Clock, FileText, ShieldCheck } from "lucide-react";
 import { GuideCard } from "@/components/GuideCard";
+import { HousingHome } from "@/components/HousingPlatform";
 import { ItemCard } from "@/components/ItemCard";
 import { SearchBox } from "@/components/SearchBox";
 import { SiteChrome } from "@/components/SiteChrome";
@@ -48,9 +49,13 @@ export default async function SiteHome({ params }: Props) {
   const site = getSite(slug);
   if (!site) notFound();
 
+  if (site.slug === "housing") {
+    return <HousingHome site={site} />;
+  }
+
   const featured = site.items.slice(0, 3);
   const latest = site.items.slice(2, 5);
-  const updatedAtLabel = "2026년 5월 26일";
+  const updatedAtLabel = "2026년 6월 5일";
   const reviewNotes = homeReviewNotes(site.slug);
 
   return (

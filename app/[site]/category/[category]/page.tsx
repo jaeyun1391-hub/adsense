@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { HousingCategory } from "@/components/HousingPlatform";
 import { ItemCard } from "@/components/ItemCard";
 import { RichContent } from "@/components/RichContent";
 import { SiteChrome } from "@/components/SiteChrome";
@@ -46,6 +47,10 @@ export default async function CategoryPage({ params }: Props) {
   const label = decodeURIComponent(category);
   const items = site.items.filter((item) => item.category === label);
   const categoryBlocks = siteCategoryBlocks(site.slug, label);
+
+  if (site.slug === "housing") {
+    return <HousingCategory site={site} label={label} items={items} categoryBlocks={categoryBlocks} />;
+  }
 
   return (
     <div style={siteStyle(site)}>
