@@ -1368,6 +1368,268 @@ function housingDeepGuideBlocks(guide: Guide) {
   ];
 }
 
+function nonHousingAudience(site: SiteSlug, category: string) {
+  switch (site) {
+    case "exam":
+      return `${category} 시험을 준비하면서 접수 마감, 시험장, 성적 제출 기준을 동시에 확인해야 하는 수험생`;
+    case "events":
+      return `${category} 방문 전 예매, 이동, 현장 변수를 미리 점검하려는 방문자`;
+    case "business":
+      return `${category} 공고를 신청하기 전 대상 업종, 자부담, 정산 기준을 확인해야 하는 사업자`;
+    case "facilities":
+      return `${category} 시설을 예약하거나 방문하기 전 운영 규칙과 현장 증빙을 확인하려는 이용자`;
+    case "housing":
+      return housingAudience(category);
+  }
+}
+
+function nonHousingKeyChecks(site: SiteSlug, category: string, checkpoint: string) {
+  switch (site) {
+    case "exam":
+      return ["접수 시작일과 마감일", checkpoint, "성적 발표일과 제출처 인정 기준", "시험 당일 인정 신분증"];
+    case "events":
+      return ["개최 기간과 입장 마감", checkpoint, "예매·환불 기준", "우천·혼잡 시 공식 변경 공지"];
+    case "business":
+      return ["대상 업종과 제외 조건", checkpoint, "자부담·정산 의무", "마감 전 필수 서류"];
+    case "facilities":
+      return ["운영시간과 휴관일", checkpoint, "예약·취소 기준", "현장 감면 또는 신분 확인 서류"];
+    case "housing":
+      return housingKeyChecks(category, checkpoint);
+  }
+}
+
+function nonHousingSourceLinks(site: SiteSlug, source: string, sourceUrl: string) {
+  const common = [{ label: source, url: sourceUrl }];
+  const extras: Record<Exclude<SiteSlug, "housing">, { label: string; url: string }[]> = {
+    exam: [
+      { label: "Q-Net", url: "https://www.q-net.or.kr/" },
+      { label: "정부24 민원서류", url: "https://www.gov.kr/" }
+    ],
+    events: [
+      { label: "문화포털", url: "https://www.culture.go.kr/" },
+      { label: "대한민국 구석구석", url: "https://korean.visitkorea.or.kr/" }
+    ],
+    business: [
+      { label: "기업마당", url: "https://www.bizinfo.go.kr/" },
+      { label: "소상공인24", url: "https://www.sbiz24.kr/" }
+    ],
+    facilities: [
+      { label: "정부24", url: "https://www.gov.kr/" },
+      { label: "공공데이터포털", url: "https://www.data.go.kr/" }
+    ]
+  };
+
+  if (site === "housing") return housingSourceLinks(source, sourceUrl);
+
+  return [...common, ...extras[site]].filter(
+    (link, index, list) => list.findIndex((candidate) => candidate.url === link.url) === index
+  );
+}
+
+function nonHousingDeepItemBlocks(site: SiteSlug, input: RichItemInput, checkpoint: string) {
+  const tagText = input.tags.length ? input.tags.join(", ") : input.category;
+
+  switch (site) {
+    case "exam":
+      return [
+        "## 실제 준비 상황별 점검",
+        `${input.title}을 확인하는 사람은 보통 시험 자체보다 결과를 어디에 제출할지가 더 중요합니다. 취업 서류, 졸업 요건, 승진 평가, 공공기관 지원처럼 제출처가 정해져 있다면 시험일보다 성적 발표일과 성적표 발급 가능일을 먼저 봐야 합니다. ${input.source}에서 ${checkpoint}을 확인한 뒤, 제출처가 인정하는 급수와 유효기간이 맞는지 다시 대조하세요.`,
+        `${input.category} 시험은 접수 화면이 열렸다고 해서 바로 접수하는 것보다 시험장 위치, 입실 시간, 준비물, 환불 가능 기간을 한 번에 확인하는 편이 안전합니다. 특히 ${tagText} 관련 시험은 비슷한 이름의 회차가 여러 개 보일 수 있으므로 시험명과 급수, 필기·실기 구분을 접수번호와 함께 남겨두는 것이 좋습니다.`,
+        "## 탈락 또는 재접수로 이어지는 흔한 이유",
+        "수험생이 자주 놓치는 부분은 응시자격 서류를 늦게 내는 경우, 신분증 규정을 잘못 이해하는 경우, 성적 발표일이 제출 마감보다 늦은 경우입니다. 시험 준비를 많이 했더라도 행정 기준을 놓치면 실제 활용이 어려워질 수 있습니다. 접수 후에는 결제 내역, 접수번호, 시험장 주소, 입실 시간을 별도로 저장해 두세요.",
+        `마지막으로 ${input.region} 기준 일정이라도 시험장별 좌석과 운영 방식은 달라질 수 있습니다. 검색 결과에 남아 있는 오래된 일정표보다 공식 접수처의 현재 화면을 우선 기준으로 삼아야 합니다.`,
+        "## 개인 일정표에 남길 기록",
+        "시험 일정은 달력에 시험일 하나만 넣으면 관리가 어렵습니다. 접수 시작일, 접수 마감일, 환불 마감일, 시험일, 합격 또는 성적 발표일, 성적표 발급 가능일, 제출처 마감일을 각각 따로 적어야 합니다. 특히 여러 시험을 동시에 준비한다면 시험일보다 발표일이 겹치는지 보는 것이 중요합니다.",
+        "기록할 때는 접수번호, 결제 수단, 시험장 주소, 시험장 연락처, 준비물 규정 링크를 함께 남겨두세요. 나중에 접수 내역을 찾지 못하거나 시험장 이름이 비슷해 헷갈리는 일을 줄일 수 있습니다. 시험장 이동 시간이 긴 경우에는 도착 목표 시간을 입실 마감보다 최소 30분 이상 앞당겨 잡는 편이 안전합니다.",
+        "## 제출처 기준으로 다시 계산하기",
+        "성적을 제출해야 하는 곳이 있다면 제출처가 인정하는 성적표 형식도 확인해야 합니다. 온라인 성적 확인 화면 캡처를 인정하는 곳도 있지만, 공식 성적표 PDF나 원본 제출을 요구하는 곳도 있습니다. 시험 주관기관의 성적 발표일만 보고 안심하지 말고, 실제 발급 방식과 제출처 접수 방식까지 함께 확인하세요."
+      ];
+    case "events":
+      return [
+        "## 실제 방문자 기준으로 다시 보기",
+        `${input.title}은 행사명만 보고 결정하면 현장에서 예상보다 시간이 오래 걸릴 수 있습니다. ${checkpoint}을 먼저 확인하고, 입장 마감, 대기 줄, 주차 또는 셔틀, 우천 변경 공지를 같이 봐야 합니다. 특히 가족이나 동행자가 있다면 관람 시간보다 휴식 공간과 화장실, 식사 동선이 더 큰 변수가 됩니다.`,
+        `${input.category} 행사는 같은 장소에서 여러 프로그램이 동시에 열릴 수 있습니다. 관심 있는 프로그램의 회차, 예약 필요 여부, 현장권 판매 여부를 분리해 기록하면 당일 동선이 훨씬 단순해집니다. ${input.source}의 공지사항이나 SNS 공지에서 운영 변경이 올라오는지도 출발 직전에 다시 확인하세요.`,
+        "## 방문 만족도를 낮추는 흔한 변수",
+        "행사장에서 가장 자주 생기는 문제는 매진, 입장 지연, 임시 주차장 만차, 우천 취소, 체험 재료 소진입니다. 무료 행사라도 특정 체험은 예약이나 재료비가 필요할 수 있고, 유료 전시는 예매처별 환불 기준이 다를 수 있습니다. 방문 전에는 예매 내역과 현장 문의처를 함께 저장해 두는 편이 좋습니다.",
+        `${input.region} 방문이라면 행사 하나만 보고 움직이기보다 주변 대중교통, 식사 장소, 대체 실내 공간을 함께 묶어보세요. 일정이 바뀌어도 대체 경로가 있으면 당일 만족도가 크게 떨어지지 않습니다.`,
+        "## 동행자별로 달라지는 준비",
+        "혼자 가는 전시와 아이, 부모님, 친구와 함께 가는 행사는 준비 기준이 다릅니다. 아이와 함께라면 유모차 이동, 수유실, 화장실, 체험 권장 연령을 먼저 보고, 부모님과 함께라면 대기 시간과 앉을 수 있는 공간을 먼저 확인하는 것이 좋습니다. 사진 촬영이 목적이라면 관람객이 몰리는 시간대와 촬영 제한 구역도 봐야 합니다.",
+        "여러 행사를 하루에 묶을 때는 두 행사 사이 이동 시간이 아니라 첫 행사 퇴장 지연까지 계산해야 합니다. 전시 관람은 예상보다 오래 걸리고, 야외 축제는 먹거리 줄이나 화장실 대기 때문에 시간이 밀릴 수 있습니다. 다음 일정에 늦지 않으려면 마지막 입장 시간과 귀가 시간을 기준으로 역산하세요.",
+        "## 당일 공지 확인 루틴",
+        "출발 전에는 공식 홈페이지, 예매처 알림, 주최 측 SNS, 지자체 관광 공지 중 최소 두 곳을 확인하는 편이 좋습니다. 우천 취소나 안전 통제는 검색 결과보다 공식 채널에 먼저 올라오는 경우가 많습니다. 변경 공지를 확인했다면 동행자에게 공유하고, 예매 취소가 필요하면 환불 마감 전에 처리하세요."
+      ];
+    case "business":
+      return [
+        "## 신청 사업자 관점의 재점검",
+        `${input.title}을 볼 때는 지원금 규모보다 대상 업종, 제외 조건, 자부담, 정산 방식이 먼저입니다. ${checkpoint}을 확인한 뒤 사업자등록증 업종, 사업장 소재지, 매출 증빙, 체납 여부를 공고문 기준으로 맞춰 보세요. 공고 제목이 비슷해도 운영기관이 다르면 심사 방식과 제출 서류가 달라질 수 있습니다.`,
+        `사업자는 ${tagText} 같은 키워드만 보고 신청하기 쉽지만, 실제 선정 여부는 사업계획의 구체성, 증빙의 완성도, 마감 전 제출 상태에 영향을 받습니다. 견적서가 필요한 사업은 공고 이후에 진행해야 인정되는 경우가 있으므로 사전 지출 가능 여부도 확인해야 합니다.`,
+        "## 보완 요구를 줄이는 준비 방식",
+        "마감일 당일에는 접속 지연이나 파일 오류가 생길 수 있습니다. 사업자등록증, 납세증명, 부가가치세 과세표준증명, 통장 사본, 견적서, 임대차계약서처럼 자주 요구되는 서류는 발급일 기준을 확인해 미리 묶어두는 것이 좋습니다. 제출 뒤에는 접수번호와 제출 파일명을 저장해 정산 단계까지 이어서 관리하세요.",
+        `${input.source}의 공고는 예산 소진, 모집 연장, 서식 변경이 생길 수 있습니다. 오래된 안내 글을 기준으로 판단하지 말고, 접수 화면의 첨부파일과 공지사항을 최종 기준으로 다시 확인해야 합니다.`,
+        "## 사업장별 보완 메모",
+        "오프라인 매장은 사업장 사진, 임대차계약서, 영업신고증, 간판 또는 내부 시설 사진이 중요할 수 있습니다. 온라인 판매자는 통신판매업 신고, 상품 상세페이지, 판매 채널, 광고 집행 계획이 더 중요합니다. 제조 소공인은 작업장과 장비, 생산 가능 수량, 안전 기준을 설명할 자료를 준비하는 편이 좋습니다.",
+        "공고문에서 요구하지 않은 자료라도 내 사업을 설명하는 데 필요한 근거는 따로 정리해두세요. 매출 추이, 고객 후기, 재방문율, 객단가, 원가표, 납품처, 예약 내역 같은 자료는 사업계획서의 빈 문장을 실제 근거로 바꿔줍니다. 단, 제출하지 말라는 자료를 임의로 추가하기보다 요구 서식 안에 핵심 숫자를 반영하는 방식이 안전합니다.",
+        "## 선정 이후까지 생각하기",
+        "지원사업은 선정 통보 후 협약, 자부담 납부, 지출, 결과보고, 정산까지 이어집니다. 신청 단계에서 정산 증빙을 생각하지 않으면 선정 후에 인정되지 않는 지출이 생길 수 있습니다. 지출 전에는 세금계산서 명의, 이체 계좌, 카드 결제 가능 여부, 결과물 제출 형식을 먼저 확인하세요."
+      ];
+    case "facilities":
+      return [
+        "## 실제 이용 전 현장 기준으로 보기",
+        `${input.title}은 운영시간만 확인하면 부족합니다. ${checkpoint}을 먼저 보고 예약 방식, 현장 결제, 감면 증빙, 취소 기준을 함께 확인해야 합니다. 공공시설은 같은 유형이라도 지자체나 운영기관에 따라 회원가입, 추첨, 선착순, 현장 확인 방식이 다를 수 있습니다.`,
+        `${input.category} 이용자는 방문 목적에 맞는 준비물을 따로 확인해야 합니다. 체육시설은 운동화나 장비 반입 기준, 도서관은 회원증과 좌석 예약, 문화센터는 수강료와 재료비, 캠핑장이나 대관시설은 보증금과 취소 수수료가 주요 변수입니다.`,
+        "## 방문 당일 막히는 지점 줄이기",
+        "현장에서 자주 생기는 문제는 예약자 이름 불일치, 감면 대상 증빙 누락, 주차장 만차, 장비 반입 제한, 취소 기한 경과입니다. 예약 확인 문자나 접수번호를 저장하고, 감면 대상이라면 자동 할인이 되는지 현장 확인이 필요한지까지 봐야 합니다.",
+        `${input.region} 시설이라도 휴관일, 공사, 행사 대관, 계절별 운영시간은 바뀔 수 있습니다. 방문 전날 공식 기관 공지와 시설별 안내 전화를 다시 확인하면 헛걸음을 줄일 수 있습니다.`,
+        "## 이용 목적별로 달라지는 확인",
+        "개인 이용과 단체 이용은 기준이 다를 수 있습니다. 개인 좌석 예약은 본인 확인이 중요하고, 단체 대관은 사용 목적, 참여 인원, 장비 사용, 안전 책임자가 중요합니다. 강좌 신청은 수강료보다 개강일, 재료비, 환불 가능일이 중요하고, 체육시설은 준비물과 입장 마감 시간이 실제 이용 만족도를 좌우합니다.",
+        "감면 대상이라면 온라인 예약 단계에서 자동 감면이 되는지, 현장 확인 후 환급되는지, 아예 현장 결제만 가능한지 확인하세요. 다자녀, 장애인, 국가유공자, 경차, 지역 주민 감면처럼 대상은 비슷해 보여도 시설별 증빙 방식은 달라질 수 있습니다.",
+        "## 예약 실패 시 대안",
+        "선착순 예약이 끝났다면 같은 기관의 다른 지점, 취소표 오픈 시간, 인근 대체 시설을 같이 봐야 합니다. 공공시설은 지역 내 여러 기관이 같은 기능을 나눠 운영하는 경우가 많습니다. 한 시설이 마감됐다고 바로 포기하지 말고, 운영기관 목록과 공공서비스예약 검색을 함께 확인하세요."
+      ];
+    case "housing":
+      return [];
+  }
+}
+
+function nonHousingItemOperationalBlocks(site: SiteSlug, input: RichItemInput) {
+  const labels: Record<SiteSlug, { subject: string; risk: string; record: string }> = {
+    exam: {
+      subject: "시험 일정",
+      risk: "접수 마감과 성적 제출 마감이 서로 다르게 움직이는 점",
+      record: "접수번호, 시험장, 발표일, 제출처 마감"
+    },
+    events: {
+      subject: "방문 일정",
+      risk: "매진, 우천 변경, 교통 통제, 체험 정원 마감이 당일에 생길 수 있는 점",
+      record: "예매처, 입장 마감, 교통, 환불 기준"
+    },
+    housing: {
+      subject: "신청 일정",
+      risk: "서류 기준이 바뀔 수 있는 점",
+      record: "공고명, 신청기간, 서류, 상담창구"
+    },
+    business: {
+      subject: "지원사업",
+      risk: "공고 첨부파일과 정산 기준이 바뀔 수 있는 점",
+      record: "공고명, 서류, 접수번호, 담당기관 답변"
+    },
+    facilities: {
+      subject: "시설 이용",
+      risk: "휴관, 예약 마감, 감면 증빙, 현장 결제 기준이 시설별로 달라지는 점",
+      record: "예약자, 이용시간, 취소기한, 감면 증빙"
+    }
+  };
+  const label = labels[site];
+
+  return [
+    "## 운영 기록으로 남기면 좋은 것",
+    `${input.title}을 확인한 뒤에는 링크만 저장하지 말고 ${label.record}을 함께 적어두는 것이 좋습니다. ${label.subject}은 시간이 지나면 검색 결과와 공식 화면의 내용이 달라질 수 있고, 나중에 다시 확인할 때 어떤 기준으로 판단했는지 기억하기 어렵기 때문입니다.`,
+    `특히 ${label.risk}을 염두에 두세요. 이 글에서 정리한 내용은 준비 방향을 잡는 데 쓰고, 실제 신청·접수·방문 직전에는 ${input.source}의 현재 공지와 운영 화면을 다시 확인해야 합니다.`,
+    "## 다음 행동 정리",
+    "지금 바로 할 일, 방문 또는 신청 전날 할 일, 당일 현장에서 확인할 일을 나누면 실수가 줄어듭니다. 지금 바로 할 일은 공식 페이지 저장과 조건 확인이고, 전날 할 일은 변경 공지 확인입니다. 당일에는 신분 확인, 예약 내역, 현장 안내를 다시 보세요."
+  ];
+}
+
+function nonHousingDeepGuideBlocks(site: SiteSlug, guide: Guide) {
+  switch (site) {
+    case "exam":
+      return [
+        "## 편집팀 재검토 포인트",
+        `${guide.title}은 수험생이 실제로 놓치는 접수 마감, 인정 신분증, 성적 발표일을 기준으로 다시 검토했습니다. 시험 준비 글은 공부법으로 흐르기 쉽지만, 이 가이드는 행정 기준과 일정 손실을 줄이는 데 초점을 둡니다.`,
+        "여러 시험을 병행한다면 접수일, 시험일, 발표일, 환불 마감일을 각각 다른 일정으로 기록하세요. 한 줄짜리 시험일 메모보다 제출 마감에 맞춘 역산표가 훨씬 안전합니다.",
+        "## 기록 양식 예시",
+        "시험명, 급수, 접수처, 접수번호, 시험장, 입실 시간, 준비물, 성적 발표일, 성적표 발급 방식, 제출처 마감일을 한 줄로 정리해 두세요. 특히 성적 제출용 시험은 시험일보다 발표일과 제출 방식이 더 중요합니다.",
+        "시험장을 정할 때는 주소만 보지 말고 실제 대중교통 이동 시간과 주말 배차 간격을 같이 봐야 합니다. 상시시험은 같은 지역 안에서도 시험장별 좌석과 프로그램 버전이 달라질 수 있으므로 접수 화면의 현재 정보를 기준으로 판단하세요.",
+        "## 실수 후 복구 계획",
+        "접수 마감이나 환불 마감을 놓쳤다면 다음 회차 접수 가능일을 바로 확인하고, 기존 준비 자료 중 다시 써도 되는 것과 새로 발급해야 하는 것을 나눠야 합니다. 사진, 신분증, 응시자격 서류, 성적표는 재사용 가능 여부가 다를 수 있습니다."
+      ];
+    case "events":
+      return [
+        "## 편집팀 재검토 포인트",
+        `${guide.title}은 행사 추천보다 실제 방문 실패를 줄이는 기준에 맞춰 보강했습니다. 예매, 입장 마감, 우천 변경, 주차와 셔틀처럼 당일 체감에 직접 영향을 주는 정보를 먼저 확인하도록 구성했습니다.`,
+        "방문 계획은 행사장 안에서 끝나지 않습니다. 출발 시간, 귀가 시간, 동행자의 체력, 대체 코스까지 함께 잡아야 행사 일정이 바뀌어도 당황하지 않습니다.",
+        "## 방문 메모 양식",
+        "행사명, 장소, 예매처, 입장 마감, 예상 체류 시간, 주차 또는 셔틀, 식사 후보, 우천 대안, 환불 마감, 공식 공지 채널을 따로 적어두세요. 현장에서 가장 크게 느껴지는 불편은 행사 내용보다 대기, 이동, 식사, 귀가에서 생기는 경우가 많습니다.",
+        "아이와 함께라면 권장 연령, 유모차 이동, 체험 회차, 재료비를 먼저 확인하세요. 야외 축제라면 돗자리, 보조배터리, 우산, 냉난방 대비 물품처럼 행사 특성에 맞는 준비물이 필요할 수 있습니다.",
+        "## 일정 변경 대응",
+        "행사 당일 변경 공지가 올라오면 예매처 안내와 주최 측 공지 중 어느 것이 더 최신인지 확인해야 합니다. 취소나 변경이 확정되면 환불 가능 시간과 대체 일정부터 확인하고, 동행자에게 변경 내용을 바로 공유하세요."
+      ];
+    case "business":
+      return [
+        "## 편집팀 재검토 포인트",
+        `${guide.title}은 지원금 규모를 강조하기보다 사업자가 실제 신청 전에 걸러야 하는 기준을 우선했습니다. 제외 업종, 자부담, 정산 의무, 사전 승인 여부가 공고문에서 더 중요할 때가 많습니다.`,
+        "공고는 예산 소진이나 서식 변경으로 달라질 수 있습니다. 접수 직전에는 첨부파일, FAQ, 공지사항을 함께 확인하고 제출 파일명과 접수번호를 정리해 두세요.",
+        "## 사업장 메모 양식",
+        "사업자등록 업종, 실제 주력 매출, 사업장 소재지, 개업일, 최근 매출, 세금 체납 여부, 기존 수혜 이력, 지출 예정 항목, 자부담 가능 금액을 한 장에 모아두세요. 이 정보가 정리되어 있으면 여러 공고를 비교할 때 같은 질문을 반복하지 않아도 됩니다.",
+        "지원사업은 신청 서류와 정산 서류가 다릅니다. 신청 단계에서는 자격을 증명하는 자료가 중요하고, 선정 이후에는 실제 지출을 증명하는 자료가 중요합니다. 두 폴더를 나눠 관리하면 보완 요청 때 훨씬 빠르게 대응할 수 있습니다.",
+        "## 다음 회차 대비",
+        "이번 공고에 맞지 않더라도 탈락 사유를 기록해두면 다음 공고에서 바로 활용할 수 있습니다. 업력 부족, 소재지 불일치, 제외 업종, 발급 서류 미비, 견적서 조건 불일치처럼 이유를 구분해 두세요."
+      ];
+    case "facilities":
+      return [
+        "## 편집팀 재검토 포인트",
+        `${guide.title}은 시설 목록이 아니라 실제 이용 순서를 중심으로 보강했습니다. 예약 가능 여부, 감면 증빙, 현장 이용 규칙, 취소 기준을 같이 봐야 공공시설 이용 실패가 줄어듭니다.`,
+        "공공시설은 운영기관별 차이가 큽니다. 같은 도서관, 체육시설, 문화센터라도 휴관일과 예약 방식이 다를 수 있으므로 방문 전 공식 안내를 다시 확인하세요.",
+        "## 이용 메모 양식",
+        "시설명, 운영기관, 예약 사이트, 예약자 이름, 이용 시간, 취소 가능 시간, 감면 증빙, 주차 가능 여부, 현장 문의처를 적어두세요. 단체 이용이라면 대표자 연락처, 참여 인원, 장비 사용 여부, 안전 책임자도 함께 남겨야 합니다.",
+        "공공시설은 행사 대관, 공사, 계절 운영, 정기 휴관으로 갑자기 이용 조건이 바뀔 수 있습니다. 예약 확인 문자만 믿기보다 방문 전날 시설 공지와 운영기관 안내를 다시 보는 습관이 필요합니다.",
+        "## 대체 경로 준비",
+        "예약이 마감됐거나 주차장이 만차라면 같은 운영기관의 다른 지점, 인근 공공시설, 대중교통 접근이 쉬운 대체 시설을 같이 확인하세요. 공공시설 이용은 한 곳만 검색하는 것보다 기능별로 여러 기관을 묶어보는 편이 성공률이 높습니다."
+      ];
+    case "housing":
+      return [];
+  }
+}
+
+function nonHousingGuideOperationalBlocks(site: SiteSlug, guide: Guide) {
+  const labels: Record<SiteSlug, { user: string; object: string; action: string; record: string }> = {
+    exam: {
+      user: "수험생",
+      object: "시험 접수와 성적 제출",
+      action: "접수처 공지, 시험장 안내, 성적 발표일을 같은 표에서 비교",
+      record: "시험명 / 급수 / 접수번호 / 시험장 / 발표일 / 제출처 마감"
+    },
+    events: {
+      user: "방문자",
+      object: "행사 방문 계획",
+      action: "예매처, 주최 측 공지, 교통 정보를 출발 전 다시 확인",
+      record: "행사명 / 장소 / 입장 마감 / 예매처 / 교통 / 우천 대안"
+    },
+    housing: {
+      user: "신청자",
+      object: "주거지원 신청",
+      action: "공고문과 신청 화면을 같이 확인",
+      record: "사업명 / 신청기간 / 서류 / 상담창구"
+    },
+    business: {
+      user: "사업자",
+      object: "지원사업 신청",
+      action: "공고문, 첨부서식, FAQ, 담당기관 답변을 함께 보관",
+      record: "공고명 / 마감일 / 자부담 / 서류 / 접수번호"
+    },
+    facilities: {
+      user: "이용자",
+      object: "공공시설 예약과 방문",
+      action: "예약 사이트, 시설 공지, 현장 증빙 기준을 방문 전 다시 확인",
+      record: "시설명 / 예약자 / 이용시간 / 취소기한 / 감면증빙 / 문의처"
+    }
+  };
+  const label = labels[site];
+
+  return [
+    "## 실제로 활용하는 방법",
+    `${guide.title}은 읽고 끝내는 설명서가 아니라 ${label.user}가 ${label.object}을 준비할 때 체크표로 쓰기 좋게 구성했습니다. 먼저 이 가이드에서 말하는 기준을 본인 상황에 맞게 한 줄씩 옮겨 적고, 해당되는 항목과 해당되지 않는 항목을 구분하세요. 조건이 맞지 않는 항목을 지우는 과정이 있어야 실제 판단 시간이 줄어듭니다.`,
+    `${label.user}는 보통 급한 일정 때문에 검색 결과의 요약만 보고 움직이기 쉽습니다. 하지만 최신 기준은 공식 페이지의 공지, 첨부파일, 접수 또는 예약 화면에서 바뀌는 경우가 많습니다. 따라서 ${label.action}하는 습관이 필요합니다.`,
+    "## 업데이트 때 다시 볼 기준",
+    "이 가이드는 2026년 6월 5일 기준으로 사이트 전체 구조를 보강하면서 다시 점검한 문서입니다. 다만 정책, 공고, 행사, 시설 운영 기준은 운영기관 사정에 따라 바뀔 수 있습니다. 같은 글을 다시 볼 때도 업데이트 기준일, 공식 출처, 다음 검토 예정일을 확인하고 오래된 캡처나 블로그 요약만으로 판단하지 않는 것이 좋습니다.",
+    "변경 가능성이 큰 항목은 날짜, 금액, 정원, 준비물, 제출 서류, 환불 또는 취소 기준입니다. 이런 항목은 가이드의 설명보다 공식 페이지의 현재 화면을 우선 기준으로 삼아야 합니다.",
+    "## 확인 기록 예시",
+    `${label.record} 형식으로 개인 메모를 남기면 나중에 같은 정보를 다시 찾는 시간이 줄어듭니다. 단순히 링크만 저장하지 말고 확인 날짜와 확인한 화면의 제목을 함께 적어두세요. 공고나 예약 화면이 바뀌었을 때 이전에 무엇을 기준으로 판단했는지 추적할 수 있습니다.`,
+    "마지막으로 문의가 필요한 경우에는 질문을 짧게 정리한 뒤 담당기관에 연락하세요. '가능한가요'보다 본인 상황과 확인하고 싶은 기준을 함께 말해야 답변이 실질적입니다. 답변을 받은 뒤에는 날짜, 기관명, 답변 요지를 저장해 다음 판단에 활용하세요.",
+    "이 기록은 한 번만 쓰는 메모가 아닙니다. 다음에 비슷한 일정, 공고, 예약을 볼 때 이전 판단 기준을 다시 꺼내면 검색 시간을 줄이고 같은 실수를 반복하지 않을 수 있습니다."
+  ];
+}
+
 export function enrichInfoItem(site: SiteSlug, item: InfoItem): InfoItem {
   if (site === "business") {
     return enhanceBusinessItem(item);
@@ -1406,25 +1668,38 @@ export function enrichInfoItem(site: SiteSlug, item: InfoItem): InfoItem {
     };
   }
 
+  const input = {
+    slug: item.slug,
+    title: item.title,
+    category: item.category,
+    region: item.region,
+    source: item.source,
+    sourceUrl: item.sourceUrl,
+    tags: item.tags,
+    checkpoint: detailCheckpoint(item.details, item.category),
+    summary: item.summary,
+    period: item.period,
+    details: item.details,
+    originalBody: item.body
+  };
+  const checkpoint = detailCheckpoint(item.details, input.checkpoint);
+  const body = [
+    ...richBodyFor(site, input),
+    ...nonHousingDeepItemBlocks(site, input, checkpoint),
+    ...nonHousingItemOperationalBlocks(site, input)
+  ];
+
   return {
     ...item,
-    body: richBodyFor(site, {
-      slug: item.slug,
-      title: item.title,
-      category: item.category,
-      region: item.region,
-      source: item.source,
-      sourceUrl: item.sourceUrl,
-      tags: item.tags,
-      checkpoint: detailCheckpoint(item.details, item.category),
-      summary: item.summary,
-      period: item.period,
-      details: item.details,
-      originalBody: item.body
-    }),
+    body,
     faq: [...item.faq, ...faqFor(site, item.title)].filter(
       (faq, index, list) => list.findIndex((candidate) => candidate.question === faq.question) === index
-    )
+    ),
+    readingTime: readingTimeFor(body),
+    audience: nonHousingAudience(site, item.category),
+    keyChecks: nonHousingKeyChecks(site, item.category, checkpoint),
+    sourceLinks: nonHousingSourceLinks(site, item.source, item.sourceUrl),
+    nextReviewAt: nextReviewDate(site)
   };
 }
 
@@ -1460,10 +1735,17 @@ export function enrichGuide(site: SiteSlug, guide: Guide): Guide {
     };
   }
 
+  const deepBody = [...enrichedBody, ...nonHousingDeepGuideBlocks(site, guide), ...nonHousingGuideOperationalBlocks(site, guide)];
+
   return {
     ...guide,
     summary: guide.summary,
-    body: enrichedBody
+    body: deepBody,
+    readingTime: readingTimeFor(deepBody),
+    audience: nonHousingAudience(site, guide.category),
+    keyChecks: nonHousingKeyChecks(site, guide.category, guide.summary),
+    sourceLinks: nonHousingSourceLinks(site, site === "events" ? "문화포털" : "정부24", site === "events" ? "https://www.culture.go.kr/" : "https://www.gov.kr/"),
+    nextReviewAt: nextReviewDate(site)
   };
 }
 
@@ -1694,6 +1976,94 @@ const facilitySeeds: ItemSeed[] = [
   checkpoint
 })) as ItemSeed[];
 
+const additionalExamSeeds: ItemSeed[] = [
+  ["license-application-calendar", "자격시험 원서접수 캘린더 만드는 법", "일정 관리", "전국", "Q-Net", "https://www.q-net.or.kr/", ["원서접수", "캘린더"], "접수 시작일과 환불 마감일을 따로 기록"],
+  ["qnet-document-screening", "Q-Net 응시자격 서류심사 확인", "국가기술자격", "전국", "한국산업인력공단 Q-Net", "https://www.q-net.or.kr/", ["응시자격", "서류심사"], "졸업증명서와 경력증명서 제출 기한"],
+  ["korcham-practical-seat", "상공회의소 실기 시험장 좌석 확인", "국가기술자격", "전국", "대한상공회의소 자격평가사업단", "https://license.korcham.net/", ["상시시험", "실기"], "희망 시험장 잔여석과 프로그램 버전"],
+  ["kuksiwon-cbt-check", "보건의료인 CBT 시험 전 확인", "전문자격", "전국", "한국보건의료인국가시험원", "https://www.kuksiwon.or.kr/", ["국시원", "CBT"], "응시표 출력과 시험장 유의사항"],
+  ["toeic-score-submit-deadline", "TOEIC 성적 제출 마감 역산", "어학시험", "전국", "YBM 한국TOEIC위원회", "https://exam.toeic.co.kr/", ["TOEIC", "성적제출"], "성적 발표일과 제출처 마감일 차이"],
+  ["language-test-id-check", "어학시험 인정 신분증 점검", "어학시험", "전국", "YBM 한국TOEIC위원회", "https://exam.toeic.co.kr/", ["신분증", "어학"], "모바일 신분증 인정 여부와 이름 표기"],
+  ["public-exam-local-limit", "지방직 공무원 거주지 제한 확인", "공공시험", "전국", "지방자치단체 인터넷원서접수센터", "https://local.gosi.go.kr/", ["지방직", "거주지"], "주소 이전 기준일과 지역 선택"],
+  ["certificate-renewal-validity", "자격증 갱신과 유효기간 관리", "성적", "전국", "정부24", "https://www.gov.kr/", ["자격증", "갱신"], "유효기간 만료 전 재발급 또는 갱신"],
+  ["exam-day-belongings", "시험 당일 준비물 최종 점검", "준비물", "전국", "Q-Net", "https://www.q-net.or.kr/", ["준비물", "시험장"], "신분증, 수험표, 필기구, 반입 제한"],
+  ["same-day-two-exams", "같은 날 두 시험을 잡아도 되는지 판단", "일정 관리", "전국", "Q-Net", "https://www.q-net.or.kr/", ["복수응시", "일정"], "입실 시간과 시험장 이동 가능성"]
+].map(([slug, title, category, region, source, sourceUrl, tags, checkpoint]) => ({
+  slug,
+  title,
+  category,
+  region,
+  source,
+  sourceUrl,
+  tags,
+  checkpoint
+})) as ItemSeed[];
+
+const additionalEventSeeds: ItemSeed[] = [
+  ["weekend-event-route", "주말 행사 2곳 묶어보는 동선", "방문", "전국", "문화포털", "https://www.culture.go.kr/", ["주말", "동선"], "행사 간 이동 시간과 입장 마감"],
+  ["exhibition-ticket-refund", "전시 티켓 환불 기준 확인", "전시", "전국", "문화포털", "https://www.culture.go.kr/", ["전시", "환불"], "예매처별 취소 수수료와 환불 마감"],
+  ["family-experience-age-check", "아이와 체험 행사 갈 때 연령 기준", "가족 나들이", "전국", "문화포털", "https://www.culture.go.kr/", ["가족", "체험"], "권장 연령과 보호자 동반 여부"],
+  ["night-festival-return", "야간 축제 귀가 동선 준비", "축제", "전국", "대한민국 구석구석", "https://korean.visitkorea.or.kr/", ["야간", "교통"], "막차 시간과 행사장 출구 위치"],
+  ["parking-shuttle-map", "축제 셔틀버스와 임시주차장 확인", "교통", "전국", "대한민국 구석구석", "https://korean.visitkorea.or.kr/", ["셔틀", "주차"], "탑승 위치와 운행 종료 시간"],
+  ["indoor-exhibition-rain", "비 오는 날 실내 전시 선택 기준", "전시", "전국", "문화포털", "https://www.culture.go.kr/", ["우천", "실내"], "대기 공간과 입장 시간 변경"],
+  ["festival-food-payment", "축제 먹거리 결제 방식 확인", "축제", "전국", "대한민국 구석구석", "https://korean.visitkorea.or.kr/", ["먹거리", "결제"], "현금, 카드, 지역화폐 사용 가능 여부"],
+  ["children-workshop-booking", "어린이 워크숍 사전예약 체크", "체험", "전국", "문화포털", "https://www.culture.go.kr/", ["어린이", "예약"], "회차별 정원과 재료비"],
+  ["regional-fair-stay", "지역 박람회 숙박까지 묶어보기", "전시", "전국", "대한민국 구석구석", "https://korean.visitkorea.or.kr/", ["박람회", "숙박"], "행사장과 숙소 거리"],
+  ["last-minute-event-check", "행사 당일 출발 직전 확인할 것", "방문", "전국", "문화포털", "https://www.culture.go.kr/", ["당일", "공지"], "운영 변경, 매진, 우천 공지"]
+].map(([slug, title, category, region, source, sourceUrl, tags, checkpoint]) => ({
+  slug,
+  title,
+  category,
+  region,
+  source,
+  sourceUrl,
+  tags,
+  checkpoint
+})) as ItemSeed[];
+
+const additionalBusinessSeeds: ItemSeed[] = [
+  ["policy-fund-application-pack", "정책자금 신청 전 서류 묶음", "정책자금", "전국", "소상공인정책자금", "https://ols.semas.or.kr/", ["정책자금", "서류"], "사업자등록증, 납세증명, 매출 증빙"],
+  ["bizinfo-local-notice-filter", "기업마당 지역 공고 거르는 법", "지역지원", "지역별", "기업마당", "https://www.bizinfo.go.kr/", ["기업마당", "지역공고"], "사업장 소재지와 업종 제한"],
+  ["startup-evaluation-score", "창업지원사업 평가항목 읽기", "창업지원", "전국", "K-Startup", "https://www.k-startup.go.kr/", ["창업지원", "평가"], "문제 정의, 시장성, 실행계획"],
+  ["facility-quote-before-apply", "시설개선 견적서 받기 전 확인", "업종별 지원", "지역별", "기업마당", "https://www.bizinfo.go.kr/", ["시설개선", "견적"], "공급업체 자격과 사전 승인 여부"],
+  ["tax-certificate-before-deadline", "납세증명서 마감 전 준비", "서류", "전국", "정부24", "https://www.gov.kr/", ["납세증명", "서류"], "발급일 기준과 체납 여부"],
+  ["small-store-digital-ad-support", "소상공인 디지털 광고 지원 확인", "교육·컨설팅", "전국", "소상공인24", "https://www.sbiz24.kr/", ["디지털", "광고"], "광고비 집행 범위와 결과보고"],
+  ["owner-education-certificate", "사업주 교육 수료증 제출 기준", "교육·컨설팅", "전국", "소상공인24", "https://www.sbiz24.kr/", ["교육", "수료증"], "필수 교육 시간과 수료증 발급"],
+  ["support-settlement-calendar", "지원금 정산 일정표 만들기", "서류", "전국", "기업마당", "https://www.bizinfo.go.kr/", ["정산", "결과보고"], "집행 증빙과 결과보고 제출일"],
+  ["export-first-consult", "첫 수출 상담 전에 준비할 자료", "창업지원", "전국", "수출지원기반활용사업", "https://www.exportvoucher.com/", ["수출", "상담"], "상품 설명서와 해외 판매 준비도"],
+  ["franchise-store-support-check", "프랜차이즈 점포 지원사업 확인", "업종별 지원", "지역별", "기업마당", "https://www.bizinfo.go.kr/", ["프랜차이즈", "점포"], "본사 지원과 가맹점 신청 가능 여부"]
+].map(([slug, title, category, region, source, sourceUrl, tags, checkpoint]) => ({
+  slug,
+  title,
+  category,
+  region,
+  source,
+  sourceUrl,
+  tags,
+  checkpoint
+})) as ItemSeed[];
+
+const additionalFacilitySeeds: ItemSeed[] = [
+  ["public-service-reservation-account", "공공서비스예약 회원가입 전 확인", "예약시설", "전국", "정부24", "https://www.gov.kr/", ["예약", "회원가입"], "본인인증 방식과 예약자 정보"],
+  ["library-study-room-weekend", "도서관 주말 열람실 이용 기준", "도서관", "전국", "공공도서관 각 기관", "https://www.data4library.kr/", ["도서관", "주말"], "좌석 예약 시간과 퇴실 처리"],
+  ["sports-center-monthly-pass", "공공체육센터 월 이용권 신청", "체육시설", "전국", "공공서비스예약", "https://www.gov.kr/", ["체육센터", "월권"], "접수 시작일과 추첨제 여부"],
+  ["parking-discount-proof", "공영주차장 감면 증빙 준비", "공영주차장", "전국", "공공데이터포털", "https://www.data.go.kr/", ["주차", "감면"], "장애인, 다자녀, 경차 증빙"],
+  ["public-class-material-fee", "공공 강좌 재료비 확인", "문화센터", "전국", "정부24", "https://www.gov.kr/", ["강좌", "재료비"], "수강료와 별도 재료비"],
+  ["family-center-room-booking", "가족센터 공간 대관 기준", "예약시설", "전국", "가족센터", "https://www.familynet.or.kr/", ["가족센터", "대관"], "이용 목적과 승인 절차"],
+  ["museum-group-visit", "박물관 단체 관람 예약", "문화센터", "전국", "문화포털", "https://www.culture.go.kr/", ["박물관", "단체"], "단체 인원과 해설 예약"],
+  ["camping-cancel-fee", "공공 캠핑장 취소 수수료 확인", "예약시설", "전국", "숲나들e", "https://www.foresttrip.go.kr/", ["캠핑", "취소"], "성수기 취소 마감과 환불률"],
+  ["tool-rental-deposit", "생활공구 대여 보증금 확인", "예약시설", "전국", "정부24", "https://www.gov.kr/", ["공구", "보증금"], "대여 기간과 파손 배상"],
+  ["public-facility-complaint-check", "공공시설 이용 불편 접수 방법", "예약시설", "전국", "국민신문고", "https://www.epeople.go.kr/", ["민원", "공공시설"], "시설 운영기관과 접수 채널"]
+].map(([slug, title, category, region, source, sourceUrl, tags, checkpoint]) => ({
+  slug,
+  title,
+  category,
+  region,
+  source,
+  sourceUrl,
+  tags,
+  checkpoint
+})) as ItemSeed[];
+
 const typedGuideSeeds: Record<SiteSlug, GuideSeed[]> = {
   exam: [
     { slug: "exam-photo-rule", title: "시험 접수 사진 규격 확인법", category: "접수", focus: "사진 규격과 본인 확인 기준" },
@@ -1757,18 +2127,51 @@ const typedGuideSeeds: Record<SiteSlug, GuideSeed[]> = {
   ]
 };
 
+const additionalGuideSeeds: Record<Exclude<SiteSlug, "housing">, GuideSeed[]> = {
+  exam: [
+    { slug: "exam-roadmap-pillar", title: "자격시험 처음 준비할 때 보는 전체 로드맵", category: "접수 가이드", focus: "시험 선택, 접수, 준비물, 발표일을 한 흐름으로 정리" },
+    { slug: "official-result-submit", title: "공식 성적표 제출 전에 확인할 기준", category: "성적", focus: "성적표 발급 방식과 제출처 인정 기준" },
+    { slug: "multi-license-calendar", title: "여러 자격증을 동시에 준비하는 일정표", category: "일정 관리", focus: "접수 마감, 시험일, 발표일 충돌 방지" },
+    { slug: "exam-document-pack", title: "응시자격 서류와 신분증 준비 묶음", category: "준비물", focus: "서류심사, 인정 신분증, 수험표 체크" },
+    { slug: "exam-fail-review", title: "불합격 후 다음 회차 다시 잡는 법", category: "일정 관리", focus: "재접수 가능일과 약점 과목 점검" }
+  ],
+  events: [
+    { slug: "event-weekend-pillar", title: "주말 행사 계획을 세우는 전체 순서", category: "방문", focus: "행사 선택부터 당일 공지 확인까지" },
+    { slug: "event-family-route", title: "가족 나들이 행사 동선 짜는 법", category: "가족", focus: "연령 제한, 휴식 공간, 체험 회차 확인" },
+    { slug: "event-weather-plan", title: "우천·폭염 때 행사 대체 계획", category: "날씨", focus: "실내 대안과 운영 변경 공지 확인" },
+    { slug: "event-ticket-refund-pack", title: "전시·공연 예매와 환불 기준 정리", category: "예매", focus: "취소 수수료, 입장 마감, 현장권 비교" },
+    { slug: "event-transport-pillar", title: "행사장 교통·주차를 먼저 보는 이유", category: "교통", focus: "셔틀, 임시주차장, 귀가 시간 확인" }
+  ],
+  business: [
+    { slug: "business-fund-pillar", title: "정책자금 공고를 처음 읽는 순서", category: "정책자금", focus: "대상 업종, 직접대출, 대리대출 구분" },
+    { slug: "business-document-pack", title: "소상공인 지원사업 기본 서류 묶음", category: "서류", focus: "사업자등록, 납세, 매출, 견적 증빙" },
+    { slug: "business-settlement-pillar", title: "지원금 정산과 결과보고 준비", category: "서류", focus: "집행 증빙과 보고서 제출 기준" },
+    { slug: "business-local-notice-map", title: "지역별 사업자 지원 공고 찾는 법", category: "지역지원", focus: "사업장 소재지와 지자체 공고 비교" },
+    { slug: "business-rejection-check", title: "지원사업 탈락 사유를 미리 줄이는 점검표", category: "공고 해석", focus: "제외 업종, 자부담, 사전 승인 누락 방지" }
+  ],
+  facilities: [
+    { slug: "facility-reservation-pillar", title: "공공시설 예약을 처음 하는 순서", category: "예약", focus: "회원가입, 추첨제, 선착순, 결제 확인" },
+    { slug: "facility-discount-pack", title: "공공시설 감면 증빙 한 번에 준비", category: "요금", focus: "감면 대상, 현장 확인, 자동 할인 여부" },
+    { slug: "facility-family-visit", title: "아이와 공공시설 방문 전 체크", category: "가족", focus: "연령 제한, 보호자 동반, 휴식 동선" },
+    { slug: "facility-parking-route", title: "공공시설 주차와 대체 이동 경로", category: "주차", focus: "공영주차장, 대중교통, 만차 대안" },
+    { slug: "facility-cancel-refund", title: "예약 취소와 환불 기준 읽는 법", category: "예약", focus: "노쇼 제한, 환불률, 재예약 가능일" }
+  ]
+};
+
 export const expandedItems: Record<SiteSlug, InfoItem[]> = {
-  exam: examSeeds.map((seed) => makeItem("exam", seed)),
-  events: eventSeeds.map((seed) => makeItem("events", seed)),
+  exam: [...examSeeds, ...additionalExamSeeds].map((seed) => makeItem("exam", seed)),
+  events: [...eventSeeds, ...additionalEventSeeds].map((seed) => makeItem("events", seed)),
   housing: [...housingSeeds, ...additionalHousingSeeds].map((seed) => makeItem("housing", seed)),
-  business: businessSeeds.map((seed) => makeItem("business", seed)),
-  facilities: facilitySeeds.map((seed) => makeItem("facilities", seed))
+  business: [...businessSeeds, ...additionalBusinessSeeds].map((seed) => makeItem("business", seed)),
+  facilities: [...facilitySeeds, ...additionalFacilitySeeds].map((seed) => makeItem("facilities", seed))
 };
 
 export const expandedGuides: Record<SiteSlug, Guide[]> = {
-  exam: typedGuideSeeds.exam.map((seed) => makeGuide("exam", seed)),
-  events: typedGuideSeeds.events.map((seed) => makeGuide("events", seed)),
+  exam: [...typedGuideSeeds.exam, ...additionalGuideSeeds.exam].map((seed) => makeGuide("exam", seed)),
+  events: [...typedGuideSeeds.events, ...additionalGuideSeeds.events].map((seed) => makeGuide("events", seed)),
   housing: typedGuideSeeds.housing.map((seed) => makeGuide("housing", seed)),
-  business: typedGuideSeeds.business.map((seed) => makeGuide("business", seed)),
-  facilities: typedGuideSeeds.facilities.map((seed) => makeGuide("facilities", seed))
+  business: [...typedGuideSeeds.business, ...additionalGuideSeeds.business].map((seed) => makeGuide("business", seed)),
+  facilities: [...typedGuideSeeds.facilities, ...additionalGuideSeeds.facilities].map((seed) =>
+    makeGuide("facilities", seed)
+  )
 };

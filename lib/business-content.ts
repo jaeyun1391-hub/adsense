@@ -1,6 +1,6 @@
 import type { Guide, InfoItem } from "@/lib/sites";
 
-export const businessUpdatedAt = "2026-05-26";
+export const businessUpdatedAt = "2026-06-05";
 
 type BusinessProfile = {
   title?: string;
@@ -1543,17 +1543,124 @@ function makeBusinessBody(profile: BusinessProfile, item: InfoItem) {
   ];
 }
 
+function businessReadingTime(blocks: string[]) {
+  const text = blocks.join(" ").replace(/\s+/g, "");
+  return `${Math.max(5, Math.ceil([...text].length / 850))}분 읽기`;
+}
+
+function businessKeyChecks(item: InfoItem) {
+  const detailValues = Object.values(item.details ?? {}).slice(0, 2);
+  return [
+    "대상 업종과 제외 업종",
+    detailValues[0] ?? "신청 자격과 사업장 소재지",
+    detailValues[1] ?? "자부담과 정산 방식",
+    "마감 전 발급해야 하는 서류"
+  ];
+}
+
+function businessSourceLinks(item: InfoItem) {
+  return [
+    { label: item.source, url: item.sourceUrl },
+    { label: "기업마당", url: "https://www.bizinfo.go.kr/" },
+    { label: "소상공인24", url: "https://www.sbiz24.kr/" },
+    { label: "소상공인정책자금", url: "https://ols.semas.or.kr/" }
+  ].filter((link, index, list) => list.findIndex((candidate) => candidate.url === link.url) === index);
+}
+
+function businessDefaultFaq(item: InfoItem) {
+  return [
+    {
+      question: `${item.title}은 공고가 열리면 바로 신청해도 되나요?`,
+      answer:
+        "바로 신청하기보다 대상 업종, 제외 조건, 자부담, 정산 방식, 제출 서류를 먼저 확인하는 편이 안전합니다. 특히 시설개선이나 바우처 사업은 승인 전 지출이 인정되지 않는 경우가 있습니다."
+    },
+    {
+      question: "사업자등록증만 있으면 충분한가요?",
+      answer:
+        "대부분은 사업자등록증 외에 납세증명, 매출 증빙, 견적서, 통장 사본, 사업계획서가 추가로 필요할 수 있습니다. 공고별 서류 목록과 발급일 기준을 반드시 확인하세요."
+    },
+    {
+      question: "마감일 당일에 제출해도 괜찮나요?",
+      answer:
+        "온라인 접수 지연, 본인인증 오류, 파일 용량 오류가 생길 수 있어 마감일 당일 제출은 위험합니다. 가능하면 마감 3일 전 서류를 완성하고 최소 몇 시간 전에는 접수를 끝내는 것이 좋습니다."
+    }
+  ];
+}
+
+function businessFallbackBody(item: InfoItem) {
+  const checkpoint = Object.values(item.details ?? {})[1] ?? item.category;
+
+  return [
+    `## ${item.title}을 신청 전 먼저 볼 기준`,
+    `${item.title}은 제목만 보면 단순한 지원사업처럼 보일 수 있지만, 실제 신청 단계에서는 대상 업종, 사업장 소재지, 업력, 매출, 세금 체납, 기존 수혜 이력 같은 조건을 먼저 통과해야 합니다. ${item.source} 공고에서 ${checkpoint}을 확인하고, 내 사업장 정보와 맞지 않는 항목이 있는지 별도로 표시해 두는 것이 좋습니다.`,
+    "지원사업은 지원금 규모보다 돈의 형태가 더 중요할 때가 많습니다. 현금 보조인지, 바우처인지, 대출인지, 교육이나 컨설팅인지에 따라 신청 후 해야 할 일이 완전히 달라집니다. 대출 성격이라면 상환과 보증 가능성을 봐야 하고, 바우처나 시설개선 사업이라면 공급기관, 자부담, 정산 증빙을 같이 봐야 합니다.",
+    "## 신청 전 서류 묶음",
+    "기본적으로 사업자등록증명, 국세 납세증명, 지방세 납세증명, 부가가치세 과세표준증명 또는 매출 증빙, 대표자 신분 확인 자료, 사업장 통장 사본을 준비하는 경우가 많습니다. 업종에 따라 영업신고증, 통신판매업 신고, 임대차계약서, 공사 전 사진, 견적서, 상품 사진, 사업계획서가 추가될 수 있습니다.",
+    "서류는 단순히 갖고 있는지만 보지 말고 발급일 기준을 확인해야 합니다. 공고일 이후 발급본을 요구하거나 신청일 기준 유효한 서류를 요구하는 경우가 있기 때문입니다. 파일명은 사업명_서류명_발급일 형태로 정리하면 보완 요청을 받았을 때 바로 찾을 수 있습니다.",
+    "## 심사와 보완에서 자주 막히는 부분",
+    "가장 흔한 보완 사유는 업종 제한을 잘못 본 경우, 견적서 항목이 지원 대상과 맞지 않는 경우, 자부담과 부가세를 계산하지 않은 경우, 승인 전 지출을 먼저 한 경우입니다. 신청 전에는 담당기관 FAQ와 첨부 서식을 같이 읽고, 애매한 기준은 문의 답변을 기록해 두는 것이 좋습니다.",
+    "선정 후에도 정산 단계가 남습니다. 세금계산서, 이체확인증, 결과보고서, 전후 사진, 납품 확인 자료를 요구할 수 있으므로 신청 단계부터 정산에 필요한 증빙을 생각해야 합니다. 지원금이 들어온 뒤에 서류를 맞추려고 하면 인정되지 않는 지출이 생길 수 있습니다."
+  ];
+}
+
+function businessDeepTail(item: InfoItem) {
+  const tags = item.tags.length ? item.tags.join(", ") : item.category;
+
+  return [
+    "## 실제 사업장 상황별 판단",
+    `${item.title}을 검토할 때 매출이 적다는 이유만으로 신청 가능하다고 판단하면 위험합니다. 지원사업은 매출 감소, 창업 단계, 고용 여부, 사업장 소재지, 업종 코드, 세금 체납 여부처럼 여러 기준을 함께 봅니다. 특히 ${tags} 관련 공고는 이름이 비슷해도 중앙기관, 지자체, 수행기관에 따라 서식과 심사 기준이 다를 수 있습니다.`,
+    "음식점, 소매점, 온라인 판매자, 프리랜서형 사업자, 제조 소공인처럼 사업 형태가 다르면 같은 공고도 준비 자료가 달라집니다. 예를 들어 시설개선은 견적서와 현장 사진이 중요하고, 온라인 판로 지원은 상품 자료와 판매 채널이 중요하며, 정책자금은 상환 가능성과 세금 자료가 더 중요합니다.",
+    "## 탈락 사유를 줄이는 보완 사례",
+    "공고를 읽을 때 '지원 가능' 문장만 표시하지 말고 '지원 제외' 문장을 따로 모아 보세요. 업종 제외, 중복 수혜 제한, 최근 선정 이력, 사업장 소재지, 사전 승인 전 지출 제한은 탈락 사유로 이어지기 쉽습니다. 애매하다면 담당기관에 현재 사업자등록증 업태와 실제 영업 내용을 함께 설명하고 답변을 기록해 두는 것이 좋습니다.",
+    "사업계획서가 필요한 경우에는 추상적인 표현보다 현재 문제, 고객, 해결 방법, 지원금 사용 항목, 실행 일정, 기대 결과를 짧고 구체적으로 써야 합니다. '홍보를 강화하겠다'보다 어떤 채널에서 어떤 상품을 얼마의 예산으로 테스트할지 쓰는 편이 심사자가 이해하기 쉽습니다.",
+    "## 정산까지 이어지는 운영 기록",
+    "지원사업은 신청서 제출이 끝이 아닙니다. 선정 통보, 협약, 자부담 납부, 지출, 결과보고, 보완 요청까지 이어집니다. 신청 폴더 안에 공고문 PDF, 제출 서류, 담당기관 답변, 접수번호, 선정 통보, 지출 증빙을 한 번에 보관하면 정산 단계에서 시간을 크게 줄일 수 있습니다.",
+    "정산이 필요한 사업은 지출 전에 결제 방식부터 확인하세요. 대표자 개인 계좌 이체, 현금 지급, 승인 전 지출, 지원 항목과 맞지 않는 견적은 인정되지 않을 수 있습니다. 세금계산서와 이체확인증의 명의가 사업자 기준과 맞는지도 중요합니다.",
+    "## 사업장 유형별 추가 확인",
+    "오프라인 점포는 임대차계약서, 영업신고증, 매장 전후 사진, 간판 또는 내부 시설 사진이 중요할 수 있습니다. 온라인 판매자는 통신판매업 신고, 판매 채널, 상품 상세페이지, 배송 정책, 광고 집행 계획을 준비하는 편이 좋습니다. 제조 소공인은 작업장 사진, 장비 현황, 생산 가능 수량, 안전 기준을 설명할 자료가 필요할 수 있습니다.",
+    "프랜차이즈 가맹점은 본사 지원과 지자체 또는 공공기관 지원이 충돌하지 않는지 확인해야 합니다. 본사가 비용을 부담하거나 이미 같은 항목을 지원했다면 중복 제한이 생길 수 있습니다. 가맹점 독립 신청이 가능한지, 본사 동의가 필요한지, 사업장 명의 지출이 인정되는지를 먼저 확인하세요.",
+    "## 문의 기록 남기는 법",
+    "담당기관에 문의할 때는 사업자등록 업종, 실제 영업 내용, 소재지, 지출 예정 항목을 함께 말해야 합니다. 단순히 '가능한가요'라고 묻는 것보다 '이 업종과 이 지출 항목이 공고의 지원 대상에 들어가는지'를 물어보면 더 실질적인 답을 받을 수 있습니다.",
+    "통화나 이메일 답변은 날짜, 담당기관, 답변 요지, 추가 제출 요청을 따로 기록하세요. 선정 이후 정산 단계에서 같은 기준을 다시 확인해야 할 때가 있고, 문의 기록이 있으면 내부 판단을 일관되게 유지하는 데 도움이 됩니다.",
+    "## 다음 공고와 비교할 기준",
+    "이번 공고가 내 사업장에 맞지 않더라도 같은 분류의 다음 공고를 더 빨리 판단할 수 있도록 비교 기준을 남겨두세요. 업력, 소재지, 매출 기준, 제외 업종, 자부담률, 정산 방식, 사전 승인 여부를 표로 만들어두면 다음 공고를 볼 때 제목에 흔들리지 않습니다.",
+    "사업자 입장에서는 지원금이 크다고 좋은 공고가 아닐 수 있습니다. 자부담이 크거나 정산 서류가 복잡하거나 지출 기간이 짧다면 실제 영업에 부담이 될 수 있습니다. 반대로 금액은 작아도 이미 준비된 서류와 지출 계획에 맞는 사업이라면 선정 이후 운영 부담이 훨씬 낮습니다.",
+    "## 공식 공고와 상담을 같이 보는 이유",
+    "공고문은 기준을 설명하지만 개별 사업장의 애매한 상황을 모두 담지는 못합니다. 업종이 섞여 있거나 온라인과 오프라인 매출이 함께 있거나, 기존 수혜 이력이 있는 경우에는 담당기관 상담이 필요할 수 있습니다. 상담 결과가 공고문과 다르게 느껴진다면 첨부파일과 FAQ를 다시 확인하고 답변 근거를 남겨두세요.",
+    "상담 전에는 내 사업장 정보를 한 문단으로 정리해두는 것이 좋습니다. 업종, 개업일, 주된 매출, 지출 예정 항목, 기존 수혜 이력을 정리하면 담당자가 공고 기준에 맞춰 답하기 쉽습니다.",
+    "## 마감 전 마지막 확인",
+    "- 공고문과 첨부 서식을 모두 내려받았습니다.\n- 대상 업종과 제외 업종을 따로 확인했습니다.\n- 자부담, 부가세, 정산 시점을 계산했습니다.\n- 발급일 제한이 있는 서류를 최신본으로 준비했습니다.\n- 접수번호, 제출 파일명, 담당기관 문의 답변을 저장했습니다.",
+    `${item.source} 공고는 예산 소진, 모집 연장, 서식 변경이 생길 수 있습니다. 따라서 이 글은 신청 전 판단을 돕는 편집 가이드로 활용하고, 최종 신청 여부는 공식 공고와 운영기관 상담을 기준으로 확인해야 합니다.`
+  ];
+}
+
+function applyBusinessMeta(item: InfoItem, body: string[], faq: InfoItem["faq"]) {
+  return {
+    ...item,
+    updatedAt: businessUpdatedAt,
+    body,
+    faq,
+    readingTime: businessReadingTime(body),
+    audience: `${item.category} 공고를 실제 신청 전 조건과 정산 기준까지 확인하려는 사업자`,
+    keyChecks: businessKeyChecks(item),
+    sourceLinks: businessSourceLinks(item),
+    nextReviewAt: "2026-06-30"
+  };
+}
+
 export function enhanceBusinessItem(item: InfoItem): InfoItem {
   const profile = businessProfiles[item.slug];
 
   if (!profile) {
-    return {
-      ...item,
-      updatedAt: businessUpdatedAt
-    };
+    const body = [...item.body, ...businessFallbackBody(item), ...businessDeepTail(item)];
+    const faq = [...item.faq, ...businessDefaultFaq(item)].filter(
+      (faqItem, index, list) => list.findIndex((candidate) => candidate.question === faqItem.question) === index
+    );
+
+    return applyBusinessMeta(item, body, faq);
   }
 
-  return {
+  const profiledItem = {
     ...item,
     title: profile.title ?? item.title,
     summary: profile.summary,
@@ -1563,9 +1670,14 @@ export function enhanceBusinessItem(item: InfoItem): InfoItem {
     updatedAt: businessUpdatedAt,
     tags: profile.tags,
     details: profile.details,
-    body: makeBusinessBody(profile, item),
     faq: profile.faq
   };
+  const body = [...makeBusinessBody(profile, profiledItem), ...businessDeepTail(profiledItem)];
+  const faq = [...profile.faq, ...businessDefaultFaq(profiledItem)].filter(
+    (faqItem, index, list) => list.findIndex((candidate) => candidate.question === faqItem.question) === index
+  );
+
+  return applyBusinessMeta(profiledItem, body, faq);
 }
 
 const businessGuides: Record<string, Pick<Guide, "summary" | "body" | "category">> = {
@@ -1737,22 +1849,87 @@ const businessGuides: Record<string, Pick<Guide, "summary" | "body" | "category"
   }
 };
 
+function businessGuideTail(guide: Guide) {
+  return [
+    "## 실제 적용 예시",
+    `${guide.title}을 적용할 때는 공고문을 한 번 읽고 끝내기보다 사업장 상황을 기준으로 다시 표시해야 합니다. 예를 들어 같은 정책자금이라도 직접대출인지 대리대출인지에 따라 상담 순서가 달라지고, 같은 시설개선 사업이라도 승인 전 지출 가능 여부에 따라 준비 방식이 달라집니다.`,
+    "사업자는 보통 바쁜 영업 중에 공고를 확인하기 때문에 '나중에 서류를 챙기면 되겠지'라고 미루기 쉽습니다. 하지만 마감이 가까워질수록 납세증명, 견적서, 사업계획서, 사진 자료를 동시에 맞추기 어렵습니다. 가이드를 읽은 뒤에는 필요한 서류를 신청 단계와 정산 단계로 나눠 폴더를 만들어 두세요.",
+    "## 상담 전 질문 목록",
+    "담당기관에 문의할 때는 '신청 가능한가요'만 묻기보다 구체적인 사업장 정보를 기준으로 질문하는 편이 좋습니다. 사업자등록 업종, 실제 영업 내용, 사업장 소재지, 매출 규모, 기존 수혜 이력, 지출 예정 항목을 함께 설명해야 담당자가 더 정확한 답을 줄 수 있습니다.",
+    "문의 후에는 통화 날짜, 담당기관, 답변 요지를 남겨두세요. 서류 보완이나 정산 단계에서 같은 기준을 다시 확인해야 할 때 기록이 큰 도움이 됩니다.",
+    "## 정산까지 이어지는 체크",
+    "지원사업은 신청서 제출보다 선정 이후의 지출 관리가 더 까다로울 때가 많습니다. 세금계산서, 이체확인증, 카드전표, 결과보고서, 전후 사진, 납품 확인 자료를 공고가 요구하는 방식으로 맞춰야 합니다. 특히 부가세, 자부담, 공급기관 기준은 처음 신청할 때부터 확인해야 합니다.",
+    "마감 전에는 접수번호, 제출 파일 목록, 제출 완료 화면을 저장하세요. 선정 후에는 협약서, 지출 승인, 보완 요청 기한을 달력에 따로 넣어두면 뒤늦은 누락을 줄일 수 있습니다.",
+    "## 서류 폴더 구성",
+    "신청 전 폴더에는 공고문, 신청서, 사업계획서, 사업자등록증명, 납세증명, 매출 증빙, 견적서, 문의 답변을 넣어두세요. 선정 후 폴더에는 협약서, 지출 승인, 세금계산서, 이체확인증, 결과물, 전후 사진, 결과보고서를 따로 저장하는 것이 좋습니다.",
+    "파일명은 날짜와 서류명을 같이 넣으면 보완 요청을 받을 때 빠르게 찾을 수 있습니다. 예를 들어 20260605_납세증명_국세.pdf처럼 저장하면 어떤 자료가 최신본인지 바로 구분됩니다. 제출용 PDF와 원본 파일을 나눠두면 수정 요청에도 대응하기 쉽습니다.",
+    "## 선정 이후 운영 루틴",
+    "선정 통보를 받으면 기뻐하기 전에 협약 조건과 지출 가능 기간을 먼저 확인해야 합니다. 지출 기간 밖에서 쓴 돈은 인정되지 않을 수 있고, 공급기관 변경이나 항목 변경은 사전 승인을 받아야 하는 경우가 많습니다.",
+    "결과보고는 마지막에 몰아서 쓰기보다 사업 진행 중 사진과 숫자를 모아두는 방식이 좋습니다. 매출 변화, 고객 반응, 방문자 수, 광고 노출, 개선 전후 사진처럼 결과를 보여주는 자료는 지원금의 쓰임을 설명하는 근거가 됩니다.",
+    "## 공고 비교표로 남길 항목",
+    "비슷한 지원사업을 여러 개 볼 때는 공고명, 운영기관, 대상 업종, 제외 조건, 지원 방식, 자부담, 부가세 처리, 정산 필요 여부, 지출 가능 기간을 같은 표에 넣어 비교하세요. 제목이 비슷한 공고라도 실제로는 대출, 바우처, 교육, 컨설팅, 시설개선처럼 성격이 크게 다릅니다.",
+    "선정 가능성만 보지 말고 선정 이후 감당해야 할 업무도 같이 봐야 합니다. 영업 시간이 부족한 1인 사업자라면 정산 서류가 복잡한 공고보다 금액은 작아도 실행이 쉬운 공고가 더 현실적일 수 있습니다. 반대로 이미 견적서와 사진, 사업계획이 준비된 사업자는 시설개선이나 판로 지원을 적극적으로 검토할 수 있습니다.",
+    "## 보완 요청을 받았을 때",
+    "보완 요청이 오면 새로 작성하기 전에 공고문, 제출 서식, 기존 제출 파일을 다시 맞춰 보세요. 담당기관이 요구한 항목만 정확히 보완해야 하고, 관련 없는 자료를 많이 추가하면 오히려 검토가 늦어질 수 있습니다.",
+    "보완 기한은 일반 마감일보다 짧은 경우가 많습니다. 요청을 받은 즉시 필요한 서류를 나누고, 발급이 필요한 자료와 수정만 하면 되는 자료를 구분하세요. 보완 제출 후에도 접수 완료 화면과 파일명을 저장해 두는 것이 안전합니다.",
+    "## 다음 신청을 위한 회고",
+    "신청이 끝난 뒤에는 결과와 상관없이 어떤 조건이 맞았고 어떤 조건이 애매했는지 회고를 남기세요. 선정됐다면 어떤 서류가 실제로 쓰였는지, 탈락했다면 업종, 점수, 예산, 서류 중 어디에서 부족했는지 나눠 적는 것이 좋습니다.",
+    "이 회고는 다음 공고를 더 빨리 판단하는 기준이 됩니다. 같은 실수를 반복하지 않으려면 공고문 PDF, 제출 파일, 보완 요청, 담당기관 답변, 최종 결과를 한 폴더에 보관하고 다음 신청 전에 다시 확인하세요.",
+    "## 편집팀 최종 점검",
+    "- 지원 대상과 제외 대상을 따로 표시했습니다.\n- 자부담과 부가세 부담을 계산했습니다.\n- 신청 서류와 정산 서류를 구분했습니다.\n- 담당기관 문의 기록을 남겼습니다.\n- 공식 공고의 첨부파일과 FAQ를 다시 확인했습니다."
+  ];
+}
+
 export function enhanceBusinessGuide(guide: Guide): Guide {
   const profile = businessGuides[guide.slug];
 
   if (!profile) {
+    const body = [...guide.body, ...businessGuideTail(guide)];
+
     return {
       ...guide,
-      updatedAt: businessUpdatedAt
+      updatedAt: businessUpdatedAt,
+      body,
+      readingTime: businessReadingTime(body),
+      audience: `${guide.category} 지원사업을 실제 신청 전 조건과 정산 기준까지 확인하려는 사업자`,
+      keyChecks: ["대상·제외 조건", "자부담과 부가세", "신청 서류와 정산 서류", "공식 공고 첨부파일"],
+      sourceLinks: businessSourceLinks({
+        ...({} as InfoItem),
+        source: "기업마당",
+        sourceUrl: "https://www.bizinfo.go.kr/",
+        details: {},
+        tags: []
+      }),
+      nextReviewAt: "2026-06-30"
     };
   }
 
-  return {
+  const profiledGuide = {
     ...guide,
     category: profile.category,
     summary: profile.summary,
     updatedAt: businessUpdatedAt,
     body: profile.body
+  };
+  const body = [...profile.body, ...businessGuideTail(profiledGuide)];
+
+  return {
+    ...profiledGuide,
+    category: profile.category,
+    summary: profile.summary,
+    updatedAt: businessUpdatedAt,
+    body,
+    readingTime: businessReadingTime(body),
+    audience: `${profile.category} 지원사업을 실제 신청 전 조건과 정산 기준까지 확인하려는 사업자`,
+    keyChecks: ["대상·제외 조건", "자부담과 부가세", "신청 서류와 정산 서류", "공식 공고 첨부파일"],
+    sourceLinks: businessSourceLinks({
+      ...({} as InfoItem),
+      source: "기업마당",
+      sourceUrl: "https://www.bizinfo.go.kr/",
+      details: {},
+      tags: []
+    }),
+    nextReviewAt: "2026-06-30"
   };
 }
 

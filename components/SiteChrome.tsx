@@ -17,12 +17,12 @@ export function SiteChrome({ site, children }: { site: SiteConfig; children: Rea
             <span>{site.name}</span>
           </Link>
           <nav className="nav" aria-label="주요 메뉴">
-            <Link href="/">
+            <Link href="/" prefetch={false}>
               <Home size={15} />
               홈
             </Link>
             {site.nav.map((item) => (
-              <Link key={item.href} href={sitePath(site, item.href)}>
+              <Link key={item.href} href={sitePath(site, item.href)} prefetch={false}>
                 {item.label}
               </Link>
             ))}
