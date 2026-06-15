@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { EventsGuidesIndex } from "@/components/EventsPlatform";
 import { GuideCard } from "@/components/GuideCard";
 import { SiteChrome } from "@/components/SiteChrome";
 import { getSite, sites, siteStyle } from "@/lib/sites";
@@ -39,6 +40,10 @@ export default async function GuidesPage({ params }: Props) {
   const { site: slug } = await params;
   const site = getSite(slug);
   if (!site) notFound();
+
+  if (site.slug === "events") {
+    return <EventsGuidesIndex site={site} />;
+  }
 
   return (
     <div style={siteStyle(site)}>

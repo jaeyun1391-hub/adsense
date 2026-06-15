@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ExternalLink } from "lucide-react";
+import { EventsTextPage } from "@/components/EventsPlatform";
 import { SiteChrome } from "@/components/SiteChrome";
 import { housingSourceGroups } from "@/lib/housing-platform-content";
 import { getSite, sites, siteStyle } from "@/lib/sites";
@@ -43,6 +44,97 @@ export default async function SourcesPage({ params }: Props) {
 
   const sources = Array.from(new Map(site.items.map((item) => [item.sourceUrl, item])).values());
   const housingGroups = site.slug === "housing" ? housingSourceGroups() : [];
+
+  if (site.slug === "events") {
+    const eventSourceGroups = [
+      {
+        title: "전국 행사·문화 포털",
+        links: [
+          { label: "대한민국 구석구석", url: "https://korean.visitkorea.or.kr/" },
+          { label: "문화포털", url: "https://www.culture.go.kr/" },
+          { label: "서울문화포털", url: "https://culture.seoul.go.kr/" }
+        ]
+      },
+      {
+        title: "지역 관광·문화 안내",
+        links: [
+          { label: "비짓부산", url: "https://www.visitbusan.net/" },
+          { label: "비짓제주", url: "https://www.visitjeju.net/" },
+          { label: "강릉시 문화관광", url: "https://www.gn.go.kr/tour/" }
+        ]
+      },
+      {
+        title: "행사장·공간 운영 안내",
+        links: [
+          { label: "BEXCO", url: "https://www.bexco.co.kr/" },
+          { label: "광화문광장", url: "https://gwanghwamun.seoul.go.kr/" },
+          { label: "한강공원", url: "https://hangang.seoul.go.kr/" }
+        ]
+      }
+    ];
+
+    return (
+      <EventsTextPage
+        site={site}
+        title="전국행사노트 출처 안내"
+        intro="전국행사노트는 행사 홍보 문구가 아니라 공식 공지, 예매처, 행사장 운영 안내를 대조해 방문자가 확인해야 할 조건을 다시 정리합니다."
+        aside="출처 링크는 최종 확인을 돕기 위한 장치입니다. 본문은 원문을 그대로 옮기지 않고 방문 판단 순서와 주의사항을 자체 문장으로 다시 작성합니다."
+      >
+        <h2>출처를 고르는 기준</h2>
+        <p>
+          행사 정보는 같은 제목이라도 주최 기관, 예매처, 행사장, 지자체 관광 포털에서 서로 다른 세부 안내를
+          제공할 수 있습니다. 전국행사노트는 일정과 장소는 주최 측 공지에서, 입장과 티켓은 예매처에서, 현장
+          운영과 교통은 행사장·지자체 공지에서 확인하는 방식을 우선합니다.
+        </p>
+        <p>
+          개인 후기, SNS 게시물, 커뮤니티 글은 현장 분위기를 이해하는 데 도움이 될 수 있지만 일정·입장료·취소
+          여부의 단독 근거로 사용하지 않습니다. 특히 무료 행사, 야외 행사, 야간 행사는 변경 공지가 빠르게 올라올
+          수 있으므로 공식 채널을 함께 표시합니다.
+        </p>
+        <h2>주요 출처 묶음</h2>
+        {eventSourceGroups.map((group) => (
+          <section key={group.title}>
+            <h3>{group.title}</h3>
+            <ul>
+              {group.links.map((link) => (
+                <li key={link.url}>
+                  <a href={link.url} target="_blank" rel="noreferrer">
+                    {link.label} <ExternalLink size={13} />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+        <h2>글별 출처</h2>
+        <p>
+          아래 목록은 현재 등록된 행사 글에서 직접 연결하는 대표 공식 출처입니다. 같은 기관이 여러 행사를
+          운영하는 경우 중복을 줄여 표시합니다. 방문자는 이 링크에서 공지 날짜, 회차, 장소, 예매 상태를 다시
+          확인해야 합니다.
+        </p>
+        <table className="info-table">
+          <tbody>
+            {sources.map((item) => (
+              <tr key={item.sourceUrl}>
+                <th>{item.source}</th>
+                <td>
+                  <a href={item.sourceUrl} target="_blank" rel="noreferrer">
+                    {item.sourceUrl} <ExternalLink size={13} />
+                  </a>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <h2>업데이트 기준</h2>
+        <p>
+          일정, 요금, 예매 방식, 장소, 교통 통제, 우천 취소 여부는 변경 가능성이 큽니다. 상세 글에는 확인일을
+          표시하고, 변경이 확인되면 본문을 수정합니다. 다만 모든 행사 공지를 실시간으로 대체할 수는 없기 때문에
+          출발 직전 공식 출처 재확인을 반복 안내합니다.
+        </p>
+      </EventsTextPage>
+    );
+  }
 
   return (
     <div className={site.slug === "housing" ? "money-platform" : undefined} style={siteStyle(site)}>

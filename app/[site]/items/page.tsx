@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { EventsItemsIndex } from "@/components/EventsPlatform";
 import { ItemCard } from "@/components/ItemCard";
 import { SiteChrome } from "@/components/SiteChrome";
 import { getSite, sites, siteStyle } from "@/lib/sites";
@@ -40,6 +41,10 @@ export default async function ItemsPage({ params }: Props) {
   const { site: slug } = await params;
   const site = getSite(slug);
   if (!site) notFound();
+
+  if (site.slug === "events") {
+    return <EventsItemsIndex site={site} />;
+  }
 
   return (
     <div style={siteStyle(site)}>

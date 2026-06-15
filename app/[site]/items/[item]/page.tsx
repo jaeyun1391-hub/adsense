@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
+import { EventsItemDetail } from "@/components/EventsPlatform";
 import { HousingItemDetail } from "@/components/HousingPlatform";
 import { RichContent } from "@/components/RichContent";
 import { SiteChrome } from "@/components/SiteChrome";
@@ -52,6 +53,10 @@ export default async function ItemDetailPage({ params }: Props) {
 
   if (site.slug === "housing") {
     return <HousingItemDetail site={site} item={item} />;
+  }
+
+  if (site.slug === "events") {
+    return <EventsItemDetail site={site} item={item} />;
   }
 
   return (

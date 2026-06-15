@@ -13,6 +13,13 @@ import {
 import type { LucideIcon } from "lucide-react";
 import type { CSSProperties } from "react";
 import { enrichGuide, enrichInfoItem, expandedGuides, expandedItems } from "@/lib/content-expansion";
+import {
+  enhanceEventGuide,
+  enhanceEventItem,
+  eventsSiteOverrides,
+  extraEventGuides,
+  extraEventItems
+} from "@/lib/events-content";
 
 export type SiteSlug = "exam" | "events" | "housing" | "business" | "facilities";
 
@@ -36,6 +43,23 @@ export type InfoItem = {
   keyChecks?: string[];
   sourceLinks?: { label: string; url: string }[];
   nextReviewAt?: string;
+  eventDateStatus?: string;
+  venue?: string;
+  bookingType?: string;
+  priceNote?: string;
+  weatherRisk?: string;
+  trafficNote?: string;
+  familyFit?: string;
+  lastCheckedAt?: string;
+  officialLinks?: { label: string; url: string }[];
+  statusBadges?: string[];
+  eventLead?: string;
+  eventCaution?: string;
+  eventSchema?: {
+    startDate: string;
+    endDate?: string;
+    locationName: string;
+  };
 };
 
 export type Guide = {
@@ -929,14 +953,24 @@ const baseSites: SiteConfig[] = [
 ];
 
 export const sites: SiteConfig[] = baseSites.map((site) => {
-  const items = [...site.items, ...expandedItems[site.slug]].map((item) => enrichInfoItem(site.slug, item));
-  const guides = [...site.guides, ...expandedGuides[site.slug]].map((guideItem) => enrichGuide(site.slug, guideItem));
+  const siteConfig = site.slug === "events" ? { ...site, ...eventsSiteOverrides } : site;
+  const rawItems = site.slug === "events" ? [...site.items, ...expandedItems[site.slug], ...extraEventItems] : [...site.items, ...expandedItems[site.slug]];
+  const rawGuides =
+    site.slug === "events" ? [...site.guides, ...expandedGuides[site.slug], ...extraEventGuides] : [...site.guides, ...expandedGuides[site.slug]];
+  const items = rawItems.map((item) => {
+    const enriched = enrichInfoItem(site.slug, item);
+    return site.slug === "events" ? enhanceEventItem(enriched) : enriched;
+  });
+  const guides = rawGuides.map((guideItem) => {
+    const enriched = enrichGuide(site.slug, guideItem);
+    return site.slug === "events" ? enhanceEventGuide(enriched) : enriched;
+  });
 
   return {
-    ...site,
+    ...siteConfig,
     items,
     guides,
-    stats: site.stats.map((stat, index) => {
+    stats: siteConfig.stats.map((stat, index) => {
       if (index === 0) return { ...stat, value: String(items.length) };
       if (index === 1) return { ...stat, value: String(guides.length) };
       return stat;

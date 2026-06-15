@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { EventsGuideDetail } from "@/components/EventsPlatform";
 import { HousingGuideDetail } from "@/components/HousingPlatform";
 import { RichContent } from "@/components/RichContent";
 import { SiteChrome } from "@/components/SiteChrome";
@@ -50,6 +51,10 @@ export default async function GuideDetailPage({ params }: Props) {
 
   if (site.slug === "housing") {
     return <HousingGuideDetail site={site} guide={guide} />;
+  }
+
+  if (site.slug === "events") {
+    return <EventsGuideDetail site={site} guide={guide} />;
   }
 
   return (
