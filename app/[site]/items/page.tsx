@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ExamItemsIndex } from "@/components/ExamPlatform";
 import { EventsItemsIndex } from "@/components/EventsPlatform";
 import { ItemCard } from "@/components/ItemCard";
 import { SiteChrome } from "@/components/SiteChrome";
@@ -44,6 +45,10 @@ export default async function ItemsPage({ params }: Props) {
 
   if (site.slug === "events") {
     return <EventsItemsIndex site={site} />;
+  }
+
+  if (site.slug === "exam") {
+    return <ExamItemsIndex site={site} />;
   }
 
   return (

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ExamHome } from "@/components/ExamPlatform";
 import { EventsHome } from "@/components/EventsPlatform";
 import { HousingHome } from "@/components/HousingPlatform";
 import { ReferenceSiteHome } from "@/components/ReferenceSitePlatform";
@@ -49,6 +50,10 @@ export default async function SiteHome({ params }: Props) {
 
   if (site.slug === "events") {
     return <EventsHome site={site} />;
+  }
+
+  if (site.slug === "exam") {
+    return <ExamHome site={site} />;
   }
 
   return <ReferenceSiteHome site={site} />;

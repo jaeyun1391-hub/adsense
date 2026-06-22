@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ExamCategory } from "@/components/ExamPlatform";
 import { EventsCategory } from "@/components/EventsPlatform";
 import { HousingCategory } from "@/components/HousingPlatform";
 import { ItemCard } from "@/components/ItemCard";
@@ -55,6 +56,10 @@ export default async function CategoryPage({ params }: Props) {
 
   if (site.slug === "events") {
     return <EventsCategory site={site} label={label} items={items} />;
+  }
+
+  if (site.slug === "exam") {
+    return <ExamCategory site={site} label={label} items={items} />;
   }
 
   return (

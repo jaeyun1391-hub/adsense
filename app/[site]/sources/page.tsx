@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ExternalLink } from "lucide-react";
+import { ExamSourcesPage } from "@/components/ExamPlatform";
 import { EventsTextPage } from "@/components/EventsPlatform";
 import { SiteChrome } from "@/components/SiteChrome";
 import { housingSourceGroups } from "@/lib/housing-platform-content";
@@ -44,6 +45,10 @@ export default async function SourcesPage({ params }: Props) {
 
   const sources = Array.from(new Map(site.items.map((item) => [item.sourceUrl, item])).values());
   const housingGroups = site.slug === "housing" ? housingSourceGroups() : [];
+
+  if (site.slug === "exam") {
+    return <ExamSourcesPage site={site} />;
+  }
 
   if (site.slug === "events") {
     const eventSourceGroups = [

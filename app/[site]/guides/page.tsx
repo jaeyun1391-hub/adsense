@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ExamGuidesIndex } from "@/components/ExamPlatform";
 import { EventsGuidesIndex } from "@/components/EventsPlatform";
 import { GuideCard } from "@/components/GuideCard";
 import { SiteChrome } from "@/components/SiteChrome";
@@ -43,6 +44,10 @@ export default async function GuidesPage({ params }: Props) {
 
   if (site.slug === "events") {
     return <EventsGuidesIndex site={site} />;
+  }
+
+  if (site.slug === "exam") {
+    return <ExamGuidesIndex site={site} />;
   }
 
   return (

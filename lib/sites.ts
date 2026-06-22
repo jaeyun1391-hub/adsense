@@ -14,6 +14,13 @@ import type { LucideIcon } from "lucide-react";
 import type { CSSProperties } from "react";
 import { enrichGuide, enrichInfoItem, expandedGuides, expandedItems } from "@/lib/content-expansion";
 import {
+  enhanceExamGuide,
+  enhanceExamItem,
+  examSiteOverrides,
+  extraExamGuides,
+  extraExamItems
+} from "@/lib/exam-content";
+import {
   enhanceEventGuide,
   enhanceEventItem,
   eventsSiteOverrides,
@@ -55,6 +62,16 @@ export type InfoItem = {
   statusBadges?: string[];
   eventLead?: string;
   eventCaution?: string;
+  examType?: string;
+  scheduleStatus?: string;
+  applicationType?: string;
+  deadlineRisk?: string;
+  documentNote?: string;
+  venueNote?: string;
+  resultNote?: string;
+  officialCheck?: string;
+  bestFor?: string;
+  caution?: string;
   eventSchema?: {
     startDate: string;
     endDate?: string;
@@ -953,16 +970,28 @@ const baseSites: SiteConfig[] = [
 ];
 
 export const sites: SiteConfig[] = baseSites.map((site) => {
-  const siteConfig = site.slug === "events" ? { ...site, ...eventsSiteOverrides } : site;
-  const rawItems = site.slug === "events" ? [...site.items, ...expandedItems[site.slug], ...extraEventItems] : [...site.items, ...expandedItems[site.slug]];
+  const siteConfig =
+    site.slug === "events" ? { ...site, ...eventsSiteOverrides } : site.slug === "exam" ? { ...site, ...examSiteOverrides } : site;
+  const rawItems =
+    site.slug === "events"
+      ? [...site.items, ...expandedItems[site.slug], ...extraEventItems]
+      : site.slug === "exam"
+        ? [...site.items, ...expandedItems[site.slug], ...extraExamItems]
+        : [...site.items, ...expandedItems[site.slug]];
   const rawGuides =
-    site.slug === "events" ? [...site.guides, ...expandedGuides[site.slug], ...extraEventGuides] : [...site.guides, ...expandedGuides[site.slug]];
+    site.slug === "events"
+      ? [...site.guides, ...expandedGuides[site.slug], ...extraEventGuides]
+      : site.slug === "exam"
+        ? [...site.guides, ...expandedGuides[site.slug], ...extraExamGuides]
+        : [...site.guides, ...expandedGuides[site.slug]];
   const items = rawItems.map((item) => {
     const enriched = enrichInfoItem(site.slug, item);
+    if (site.slug === "exam") return enhanceExamItem(enriched);
     return site.slug === "events" ? enhanceEventItem(enriched) : enriched;
   });
   const guides = rawGuides.map((guideItem) => {
     const enriched = enrichGuide(site.slug, guideItem);
+    if (site.slug === "exam") return enhanceExamGuide(enriched);
     return site.slug === "events" ? enhanceEventGuide(enriched) : enriched;
   });
 

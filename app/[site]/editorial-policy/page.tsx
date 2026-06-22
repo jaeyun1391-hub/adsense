@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { ExamTextPage } from "@/components/ExamPlatform";
 import { EventsTextPage } from "@/components/EventsPlatform";
+import { examNextReviewDate, examReviewDate } from "@/lib/exam-content";
 import { RichContent } from "@/components/RichContent";
 import { SiteChrome } from "@/components/SiteChrome";
 import { housingNextReviewDate, housingReviewDate } from "@/lib/housing-platform-content";
@@ -43,6 +45,55 @@ export default async function EditorialPolicyPage({ params }: Props) {
   const site = getSite(slug);
   if (!site) notFound();
   const policyBlocks = editorialPolicyBlocks(site.slug);
+
+  if (site.slug === "exam") {
+    return (
+      <ExamTextPage
+        site={site}
+        title="시험일정센터 편집 기준"
+        intro="시험 콘텐츠는 시험일 하나를 크게 보여주는 방식으로 만들지 않습니다. 접수 마감, 시험장, 준비물, 응시자격, 성적 발표를 공식 접수처 기준으로 분리해 설명합니다."
+        aside={`현재 검토 기준일은 ${examReviewDate}이며 다음 정기 검토 예정일은 ${examNextReviewDate}입니다. 시험 일정은 수시로 바뀔 수 있어 실제 접수 전 공식 접수처 확인을 우선합니다.`}
+      >
+        <h2>작성 책임과 범위</h2>
+        <p>
+          시험일정센터의 글은 편집팀 명의로 작성합니다. 글의 목적은 시험 접수나 합격을 보장하는 것이 아니라,
+          수험생이 공식 접수처에서 어떤 항목을 다시 확인해야 하는지 알려주는 것입니다. 특정 시험 응시를 권유하거나
+          개인별 응시자격을 판정하지 않습니다.
+        </p>
+        <h2>기본 검토 순서</h2>
+        <ol>
+          <li>공식 접수처와 시행기관 공지에서 시험명, 회차, 접수 기간, 시험일을 확인합니다.</li>
+          <li>정기시험, 상시시험, 추가 접수, CBT처럼 접수 방식이 다른 경우를 분리합니다.</li>
+          <li>응시자격 서류, 인정 신분증, 사진, 수험표, 준비물 기준을 확인합니다.</li>
+          <li>성적 발표일, 성적표 발급, 제출처 마감일을 시험일과 함께 봅니다.</li>
+          <li>변경 공고, 시험장 공지, 합격자 발표 메뉴가 별도로 있는지 확인합니다.</li>
+        </ol>
+        <h2>본문 구성 기준</h2>
+        <p>
+          상세 글은 한 줄 결론, 필요한 사람, 접수 전 확인 순서, 서류와 본인 확인, 시험장과 당일 준비, 성적 발표와
+          제출 마감, 자주 생기는 실수, 공식 출처 순서로 작성합니다. 모든 시험에 같은 문장을 반복하지 않고
+          국가기술자격은 필기·실기 연결, 어학시험은 성적 제출, 공공시험은 공고와 전형 일정처럼 다른 기준을 앞에 둡니다.
+        </p>
+        <h2>공식 출처 우선 원칙</h2>
+        <p>
+          일정, 접수 가능 여부, 응시 조건은 개인 블로그나 커뮤니티를 근거로 쓰지 않습니다. 공식 접수처의 현재
+          공지, 원서접수 화면, 수험자 유의사항, 마이페이지 접수 상태, 합격자 발표 메뉴를 우선 기준으로 삼습니다.
+        </p>
+        <h2>단정 표현 제한</h2>
+        <p>
+          “무조건 접수 가능”, “확정 합격”, “반드시 인정” 같은 표현을 쓰지 않습니다. 시험 일정과 응시 조건은
+          시행기관 사정에 따라 달라질 수 있으므로, 글의 결론은 항상 공식 접수처 재확인으로 이어지도록 작성합니다.
+        </p>
+        <h2>업데이트 우선순위</h2>
+        <p>
+          접수 마감, 추가 접수, 시험장 변경, 응시자격 서류 제출, 성적 발표일, 공공시험 변경 공고처럼 수험생의
+          행동에 직접 영향을 주는 항목을 우선 점검합니다. 단순 시험 소개 문구보다 접수 실패나 제출 마감 누락을
+          줄이는 정보가 먼저입니다.
+        </p>
+        {policyBlocks.length ? <RichContent blocks={policyBlocks} /> : null}
+      </ExamTextPage>
+    );
+  }
 
   if (site.slug === "events") {
     return (

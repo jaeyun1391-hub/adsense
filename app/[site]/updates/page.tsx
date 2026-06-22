@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ExamTextPage } from "@/components/ExamPlatform";
 import { EventsTextPage } from "@/components/EventsPlatform";
+import { examNextReviewDate, examReviewDate } from "@/lib/exam-content";
 import { SiteChrome } from "@/components/SiteChrome";
 import { housingUpdateLog } from "@/lib/housing-platform-content";
 import { updateLogItems } from "@/lib/site-depth-content";
@@ -46,6 +48,54 @@ export default async function UpdatesPage({ params }: Props) {
   const recentItems = site.items.slice(0, site.slug === "housing" ? 8 : 6);
   const updates = site.slug === "housing" ? housingUpdateLog() : updateLogItems(site.slug);
   const updateHeading = site.slug === "housing" ? "2026년 6월 5일 최종 구조 점검" : "2026년 5월 26일 점검";
+
+  if (site.slug === "exam") {
+    return (
+      <ExamTextPage
+        site={site}
+        title="시험일정센터 업데이트 기록"
+        intro="이 페이지는 시험일정센터가 어떤 기준으로 시험 콘텐츠와 사이트 구조를 점검했는지 남기는 운영 로그입니다."
+        aside="업데이트 기록은 날짜 장식이 아니라, 접수 마감·준비물·성적 발표·공식 출처가 어떻게 보강됐는지 남기는 문서입니다."
+      >
+        <h2>{examReviewDate} 구조 재설계</h2>
+        <ul>
+          <li>기존 공통 히어로와 도메인 카드, 숫자 통계 카드 구조를 제거했습니다.</li>
+          <li>홈을 수험생 일정 데스크 형태로 바꾸고 접수 마감판, 준비물 보드, 공식 출처 묶음을 추가했습니다.</li>
+          <li>상세 글을 시험 브리핑 형식으로 바꿔 접수 방식, 마감 리스크, 서류, 시험장, 성적 발표를 분리했습니다.</li>
+          <li>Q-Net, 상공회의소, 데이터자격검정, 국시원, 공공시험 접수처 기반 신규 글을 추가했습니다.</li>
+          <li>가이드 목록을 접수 마감, 시험장, 성적 제출, 신분증, 응시자격 서류 중심으로 다시 구성했습니다.</li>
+        </ul>
+        <h2>이번에 다시 확인한 대표 글</h2>
+        <table className="info-table">
+          <tbody>
+            {site.items.slice(0, 12).map((item) => (
+              <tr key={item.slug}>
+                <th>{item.category}</th>
+                <td>
+                  <Link href={`/items/${item.slug}`}>{item.title}</Link>
+                  <br />
+                  <span className="muted">
+                    {item.source} · 검토 {item.lastCheckedAt ?? item.updatedAt} · {item.applicationType}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <h2>콘텐츠 보강 기준</h2>
+        <p>
+          이번 점검에서는 글의 양만 늘리는 방식보다, 시험별로 실제로 다른 확인 항목이 보이도록 바꾸는 데 집중했습니다.
+          국가기술자격은 필기·실기 연결과 응시자격 서류, 공인검정은 급수와 고사장, 어학시험은 성적 발표와 제출
+          마감, 공공시험은 공고와 변경공고를 먼저 보도록 재구성했습니다.
+        </p>
+        <h2>다음 점검 항목</h2>
+        <p>
+          다음 정기 점검 예정일은 {examNextReviewDate}입니다. 그 전이라도 시험장 변경, 접수 마감 변경,
+          응시자격 서류 기준 변경, 성적 발표일 변경이 확인되면 우선 수정합니다.
+        </p>
+      </ExamTextPage>
+    );
+  }
 
   if (site.slug === "events") {
     const freeCount = site.items.filter((item) => item.category === "무료 행사").length;

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ExamGuideDetail } from "@/components/ExamPlatform";
 import { EventsGuideDetail } from "@/components/EventsPlatform";
 import { HousingGuideDetail } from "@/components/HousingPlatform";
 import { RichContent } from "@/components/RichContent";
@@ -55,6 +56,10 @@ export default async function GuideDetailPage({ params }: Props) {
 
   if (site.slug === "events") {
     return <EventsGuideDetail site={site} guide={guide} />;
+  }
+
+  if (site.slug === "exam") {
+    return <ExamGuideDetail site={site} guide={guide} />;
   }
 
   return (

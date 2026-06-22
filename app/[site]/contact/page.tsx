@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Mail } from "lucide-react";
+import { ExamTextPage } from "@/components/ExamPlatform";
 import { EventsTextPage } from "@/components/EventsPlatform";
 import { SiteChrome } from "@/components/SiteChrome";
 import { getSite, sites, siteStyle } from "@/lib/sites";
@@ -40,6 +41,44 @@ export default async function ContactPage({ params }: Props) {
   const { site: slug } = await params;
   const site = getSite(slug);
   if (!site) notFound();
+
+  if (site.slug === "exam") {
+    return (
+      <ExamTextPage
+        site={site}
+        title="시험일정센터 문의"
+        intro="시험 일정 정정, 공식 접수처 추가, 응시자격 서류 기준 보완, 성적 발표일 확인 요청을 받는 연락 창구입니다."
+        aside="시험일정센터는 시험 주관기관이 아니므로 접수 취소, 환불, 응시자격 판정, 합격 상담을 대신 처리할 수 없습니다."
+      >
+        <h2>운영자 이메일</h2>
+        <p>
+          <a className="button secondary" href={`mailto:contact@${site.domainHint}`}>
+            <Mail size={15} />
+            contact@{site.domainHint}
+          </a>
+        </p>
+        <h2>정정 요청 시 보내주시면 좋은 내용</h2>
+        <ul>
+          <li>수정이 필요한 시험일정센터 페이지 주소</li>
+          <li>시험명, 급수, 회차, 주관기관명</li>
+          <li>잘못되었거나 오래된 문장</li>
+          <li>공식 접수처, 시행기관 공지, 수험자 유의사항 링크</li>
+          <li>공지 날짜와 적용되는 시험 회차</li>
+        </ul>
+        <h2>우선 확인하는 문의</h2>
+        <p>
+          접수 마감 변경, 추가 접수 공지, 시험장 변경, 응시자격 서류 제출 기준, 인정 신분증 변경, 성적 발표일
+          변경처럼 수험생의 행동에 직접 영향을 주는 내용은 우선 확인합니다.
+        </p>
+        <h2>처리하지 않는 문의</h2>
+        <p>
+          원서접수 취소, 환불, 시험장 변경 신청, 개인별 응시자격 판정, 합격 가능성 상담, 성적 이의신청은 해당
+          공식 접수처와 시행기관으로 문의해야 합니다. 시험일정센터는 공개 정보를 바탕으로 확인 순서를 정리하는
+          정보 사이트입니다.
+        </p>
+      </ExamTextPage>
+    );
+  }
 
   if (site.slug === "events") {
     return (
