@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { SiteDocumentView, isOperationalDocument, operationalDocuments } from "@/components/SiteExperience";
-import { documentLabel } from "@/lib/experience";
+import { documentDescription, documentLabel } from "@/lib/experience";
 import { pageMetadata } from "@/lib/page-metadata";
 import { getSite, sites } from "@/lib/sites";
 import { notFound } from "next/navigation";
@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return pageMetadata(
     site,
     documentLabel(document),
-    site.name + "의 공개 운영 기준, 출처 원칙, 정정 및 문의 절차를 안내합니다.",
+    documentDescription(document, site.name),
     "/" + document,
     document === "adsense-playbook"
   );

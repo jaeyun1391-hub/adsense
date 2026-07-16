@@ -140,6 +140,24 @@ export function documentLabel(document: string) {
   return labels[document] ?? "운영 문서";
 }
 
+export function documentDescription(document: string, siteName: string) {
+  const descriptions: Record<string, string> = {
+    about: `${siteName}의 운영 목적, 편집 범위, 운영자 정보와 제공하지 않는 서비스를 안내합니다.`,
+    "editorial-policy": `${siteName}이 공식 원문을 검토하고 편집형 가이드를 공개하는 기준을 설명합니다.`,
+    sources: `${siteName}이 일정과 조건을 확인할 때 우선하는 공식 출처와 인용 원칙을 공개합니다.`,
+    updates: `${siteName}의 수집 연결, 정보 정정, 만료 처리와 편집 보강 기록을 확인합니다.`,
+    contact: `${siteName}의 정보 정정 요청 방법과 운영자 문의 창구를 안내합니다.`,
+    privacy: `${siteName}의 개인정보 처리 목적, 보관 기준, 이용자 권리와 문의 방법을 안내합니다.`,
+    terms: `${siteName} 정보 이용 시 적용되는 이용 범위, 책임 제한, 금지 행위를 안내합니다.`,
+    copyright: `${siteName}의 자체 편집물, 외부 출처, 저작권 침해 신고 처리 기준을 안내합니다.`,
+    "youth-policy": `${siteName}의 청소년 보호 원칙과 유해 정보 대응, 신고 처리 기준을 공개합니다.`,
+    "email-collection": `${siteName}은 전자우편 주소의 무단 수집과 자동 추출을 거부합니다.`,
+    "adsense-playbook": `${siteName}의 광고 신청 전 점검 항목과 반려 후 운영 대응 절차를 기록합니다.`
+  };
+
+  return descriptions[document] ?? `${siteName}의 공개 운영 기준과 정보 확인 절차를 안내합니다.`;
+}
+
 type SupplementSeed = {
   title: string;
   summary: string;
