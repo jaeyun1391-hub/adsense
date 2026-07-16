@@ -214,7 +214,8 @@ export function getSourceHealth(siteSlug: SiteSlug): SourceHealth[] {
     const latestRun = latestRunFor(source);
     const lastCompletedAt = latestRun?.finishedAt ?? latestRun?.startedAt;
     const ageMs = lastCompletedAt ? Date.now() - Date.parse(lastCompletedAt) : 0;
-    const isStale = Boolean(lastCompletedAt && !Number.isNaN(ageMs) && ageMs > source.cadenceHours * 3 * 60 * 60 * 1000);
+    const maximumLogAgeMs = Math.max(source.cadenceHours * 3 * 60 * 60 * 1000, 36 * 60 * 60 * 1000);
+    const isStale = Boolean(lastCompletedAt && !Number.isNaN(ageMs) && ageMs > maximumLogAgeMs);
 
     return {
       id: source.id,
