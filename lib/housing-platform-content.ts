@@ -1,7 +1,9 @@
 import type { Guide, InfoItem, SiteConfig } from "@/lib/sites";
 
-export const housingReviewDate = "2026-06-05";
-export const housingNextReviewDate = "2026-07-05";
+export const housingReviewDate = new Date().toISOString().slice(0, 10);
+const housingNextReview = new Date();
+housingNextReview.setDate(housingNextReview.getDate() + 7);
+export const housingNextReviewDate = housingNextReview.toISOString().slice(0, 10);
 
 export function housingCategoryPath(site: SiteConfig, matcher: string) {
   const category = site.categories.find((item) => item.includes(matcher)) ?? site.categories[0];

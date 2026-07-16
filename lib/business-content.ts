@@ -1,6 +1,9 @@
 import type { Guide, InfoItem } from "@/lib/sites";
 
-export const businessUpdatedAt = "2026-06-05";
+export const businessUpdatedAt = new Date().toISOString().slice(0, 10);
+const businessNextReview = new Date();
+businessNextReview.setDate(businessNextReview.getDate() + 7);
+export const businessNextReviewDate = businessNextReview.toISOString().slice(0, 10);
 
 type BusinessProfile = {
   title?: string;
@@ -1644,7 +1647,7 @@ function applyBusinessMeta(item: InfoItem, body: string[], faq: InfoItem["faq"])
     audience: `${item.category} 공고를 실제 신청 전 조건과 정산 기준까지 확인하려는 사업자`,
     keyChecks: businessKeyChecks(item),
     sourceLinks: businessSourceLinks(item),
-    nextReviewAt: "2026-06-30"
+    nextReviewAt: businessNextReviewDate
   };
 }
 
@@ -1900,7 +1903,7 @@ export function enhanceBusinessGuide(guide: Guide): Guide {
         details: {},
         tags: []
       }),
-      nextReviewAt: "2026-06-30"
+      nextReviewAt: businessNextReviewDate
     };
   }
 
@@ -1929,7 +1932,7 @@ export function enhanceBusinessGuide(guide: Guide): Guide {
       details: {},
       tags: []
     }),
-    nextReviewAt: "2026-06-30"
+    nextReviewAt: businessNextReviewDate
   };
 }
 

@@ -13,6 +13,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import type { CSSProperties } from "react";
 import { enrichGuide, enrichInfoItem, expandedGuides, expandedItems } from "@/lib/content-expansion";
+import { improveEditorialQuality } from "@/lib/editorial-quality";
 import {
   enhanceExamGuide,
   enhanceExamItem,
@@ -119,7 +120,7 @@ export type SiteConfig = {
   guides: Guide[];
 };
 
-const today = "2026-06-05";
+const today = new Date().toISOString().slice(0, 10);
 
 function item(
   slug: string,
@@ -994,14 +995,15 @@ export const sites: SiteConfig[] = baseSites.map((site) => {
     if (site.slug === "exam") return enhanceExamGuide(enriched);
     return site.slug === "events" ? enhanceEventGuide(enriched) : enriched;
   });
+  const qualityChecked = improveEditorialQuality(site.slug, items, guides);
 
   return {
     ...siteConfig,
-    items,
-    guides,
+    items: qualityChecked.items,
+    guides: qualityChecked.guides,
     stats: siteConfig.stats.map((stat, index) => {
-      if (index === 0) return { ...stat, value: String(items.length) };
-      if (index === 1) return { ...stat, value: String(guides.length) };
+      if (index === 0) return { ...stat, value: String(qualityChecked.items.length) };
+      if (index === 1) return { ...stat, value: String(qualityChecked.guides.length) };
       return stat;
     })
   };

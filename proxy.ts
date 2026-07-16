@@ -18,7 +18,7 @@ export function proxy(request: NextRequest) {
   const site = domainToSite[host];
   const { pathname } = request.nextUrl;
 
-  if (!site || pathname.startsWith("/_next") || pathname.includes(".")) {
+  if (!site || pathname.startsWith("/_next") || pathname.startsWith("/ops") || pathname.includes(".")) {
     return NextResponse.next();
   }
 

@@ -1,7 +1,13 @@
 import type { Guide, InfoItem, SiteConfig } from "@/lib/sites";
 
-export const examReviewDate = "2026-06-22";
-export const examNextReviewDate = "2026-07-22";
+function examDateAfter(days: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+export const examReviewDate = examDateAfter(0);
+export const examNextReviewDate = examDateAfter(7);
 
 type ExamLink = {
   label: string;

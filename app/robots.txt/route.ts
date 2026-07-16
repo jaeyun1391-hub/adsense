@@ -16,7 +16,7 @@ export async function GET() {
     ? [`Sitemap: ${publicUrl(site, "/sitemap.xml")}`]
     : sites.map((siteItem) => `Sitemap: ${publicUrl(siteItem, "/sitemap.xml")}`);
 
-  return new Response(["User-Agent: *", "Allow: /", "", ...sitemapLines, ""].join("\n"), {
+  return new Response(["User-Agent: *", "Allow: /", "Disallow: /ops", "", ...sitemapLines, ""].join("\n"), {
     headers: {
       "content-type": "text/plain; charset=utf-8"
     }

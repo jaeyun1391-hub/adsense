@@ -1,7 +1,7 @@
 import type { Guide, InfoItem, SiteSlug } from "@/lib/sites";
 import { enhanceBusinessGuide, enhanceBusinessItem } from "@/lib/business-content";
 
-const updatedAt = "2026-06-05";
+const updatedAt = new Date().toISOString().slice(0, 10);
 
 type ItemSeed = {
   slug: string;
@@ -1051,7 +1051,9 @@ function readingTimeFor(blocks: string[]) {
 }
 
 function nextReviewDate(site: SiteSlug) {
-  return site === "housing" ? "2026-07-05" : "2026-06-30";
+  const date = new Date();
+  date.setDate(date.getDate() + (site === "housing" ? 14 : 7));
+  return date.toISOString().slice(0, 10);
 }
 
 function housingAudience(category: string) {
@@ -1621,7 +1623,7 @@ function nonHousingGuideOperationalBlocks(site: SiteSlug, guide: Guide) {
     `${guide.title}은 읽고 끝내는 설명서가 아니라 ${label.user}가 ${label.object}을 준비할 때 체크표로 쓰기 좋게 구성했습니다. 먼저 이 가이드에서 말하는 기준을 본인 상황에 맞게 한 줄씩 옮겨 적고, 해당되는 항목과 해당되지 않는 항목을 구분하세요. 조건이 맞지 않는 항목을 지우는 과정이 있어야 실제 판단 시간이 줄어듭니다.`,
     `${label.user}는 보통 급한 일정 때문에 검색 결과의 요약만 보고 움직이기 쉽습니다. 하지만 최신 기준은 공식 페이지의 공지, 첨부파일, 접수 또는 예약 화면에서 바뀌는 경우가 많습니다. 따라서 ${label.action}하는 습관이 필요합니다.`,
     "## 업데이트 때 다시 볼 기준",
-    "이 가이드는 2026년 6월 5일 기준으로 사이트 전체 구조를 보강하면서 다시 점검한 문서입니다. 다만 정책, 공고, 행사, 시설 운영 기준은 운영기관 사정에 따라 바뀔 수 있습니다. 같은 글을 다시 볼 때도 업데이트 기준일, 공식 출처, 다음 검토 예정일을 확인하고 오래된 캡처나 블로그 요약만으로 판단하지 않는 것이 좋습니다.",
+    `이 가이드는 ${updatedAt} 기준으로 사이트 전체 구조를 보강하면서 다시 점검한 문서입니다. 다만 정책, 공고, 행사, 시설 운영 기준은 운영기관 사정에 따라 바뀔 수 있습니다. 같은 글을 다시 볼 때도 업데이트 기준일, 공식 출처, 다음 검토 예정일을 확인하고 오래된 캡처나 블로그 요약만으로 판단하지 않는 것이 좋습니다.`,
     "변경 가능성이 큰 항목은 날짜, 금액, 정원, 준비물, 제출 서류, 환불 또는 취소 기준입니다. 이런 항목은 가이드의 설명보다 공식 페이지의 현재 화면을 우선 기준으로 삼아야 합니다.",
     "## 확인 기록 예시",
     `${label.record} 형식으로 개인 메모를 남기면 나중에 같은 정보를 다시 찾는 시간이 줄어듭니다. 단순히 링크만 저장하지 말고 확인 날짜와 확인한 화면의 제목을 함께 적어두세요. 공고나 예약 화면이 바뀌었을 때 이전에 무엇을 기준으로 판단했는지 추적할 수 있습니다.`,

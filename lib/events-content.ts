@@ -1,7 +1,13 @@
 import type { Guide, InfoItem, SiteConfig } from "@/lib/sites";
 
-export const eventsReviewDate = "2026-06-14";
-export const eventsNextReviewDate = "2026-07-14";
+function eventsDateAfter(days: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+export const eventsReviewDate = eventsDateAfter(0);
+export const eventsNextReviewDate = eventsDateAfter(7);
 
 type EventLink = {
   label: string;
@@ -820,6 +826,14 @@ function guideBody(seed: EventGuideSeed) {
 
 export function enhanceEventGuide(guide: Guide): Guide {
   const summary = `${guide.title}: ${guide.category} 상황에서 공식 공지, 예매 방식, 현장 변수를 어떤 순서로 볼지 정리한 방문 기준입니다.`;
+  const eventBody = guideBody({
+    slug: guide.slug,
+    title: guide.title,
+    summary,
+    category: guide.category,
+    focus: guide.audience ?? `${guide.category} 기준이 필요한 행사 방문자`,
+    checklist: guide.keyChecks ?? ["공식 공지", "예매 방식", "현장 변수", "귀가 동선"]
+  });
 
   return {
     ...guide,
@@ -833,14 +847,7 @@ export function enhanceEventGuide(guide: Guide): Guide {
       { label: "대한민국 구석구석", url: "https://korean.visitkorea.or.kr/" },
       { label: "문화포털", url: "https://www.culture.go.kr/" }
     ],
-    body: guideBody({
-      slug: guide.slug,
-      title: guide.title,
-      summary,
-      category: guide.category,
-      focus: guide.audience ?? `${guide.category} 기준이 필요한 행사 방문자`,
-      checklist: guide.keyChecks ?? ["공식 공지", "예매 방식", "현장 변수", "귀가 동선"]
-    })
+    body: [...eventBody, ...guide.body]
   };
 }
 
