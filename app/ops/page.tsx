@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { OpsDashboard } from "@/components/OpsDashboard";
 import { getEditorialAudits } from "@/lib/editorial-audit";
 import { hasOpsAccess } from "@/lib/ops-auth";
-import { getApplicationRuns, getCollectionRuns, getPublicRecords, getSourceHealth } from "@/lib/operations";
+import { getApplicationRuns, getCollectionRuns, getOperationsManifestStatus, getPublicRecords, getSourceHealth } from "@/lib/operations";
 import { sites } from "@/lib/sites";
 
 export const dynamic = "force-dynamic";
@@ -18,5 +18,6 @@ export default async function OpsPage() {
     }))
   ]);
   const sourceHealth = sites.flatMap((site) => getSourceHealth(site.slug));
-  return <OpsDashboard applicationRuns={applicationRuns} sourceHealth={sourceHealth} snapshots={snapshots} collectionRuns={collectionRuns} qualityAudits={getEditorialAudits()} />;
+  const manifestStatus = getOperationsManifestStatus();
+  return <OpsDashboard applicationRuns={applicationRuns} sourceHealth={sourceHealth} snapshots={snapshots} collectionRuns={collectionRuns} qualityAudits={getEditorialAudits()} manifestUpdatedAt={manifestStatus.updatedAt} />;
 }

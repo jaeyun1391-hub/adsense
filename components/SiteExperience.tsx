@@ -91,8 +91,8 @@ function SourceState({ site, live }: { site: SiteConfig; live: boolean }) {
   const health = getSourceHealth(site.slug);
   return (
     <div className="source-state">
-      <span className={live ? "state-live" : "state-reference"}>{live ? "자동 동기화" : "편집 기준 데이터"}</span>
-      <p>{live ? "공식 원천을 수집해 변경 이력을 남기고 있습니다." : "공식 원천 연결 전에는 검토된 편집 데이터와 원문 링크를 표시합니다."}</p>
+      <span className={live ? "state-live" : "state-reference"}>{live ? "정기 검토 반영" : "편집 기준 데이터"}</span>
+      <p>{live ? "공식 원문을 다시 확인한 뒤, 검증을 통과한 변경만 운영 이력과 함께 반영합니다." : "Codex 정기 작업이 공식 원문을 검토하며, 그 전에는 검토된 편집 데이터와 원문 링크를 표시합니다."}</p>
       <div className="source-state-list">
         {health.map((source) => <span key={source.id}>{source.label} · {source.cadenceHours}시간</span>)}
       </div>

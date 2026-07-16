@@ -1,15 +1,9 @@
-"use client";
-
-import { useState } from "react";
-import { ArrowUpRight, RefreshCw } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import type { SiteQualityAudit } from "@/lib/editorial-audit";
-import type { ApplicationRun, ApplicationStatus, CollectionRunLog, SourceHealth } from "@/lib/operations";
+import type { ApplicationRun, CollectionRunLog, SourceHealth } from "@/lib/operations";
 import type { SiteSlug } from "@/lib/sites";
 
 type Snapshot = { siteSlug: SiteSlug; name: string; count: number; live: boolean };
-type CollectionResult = { source: string; state: string; count: number; detail: string };
-
-const statuses: ApplicationStatus[] = ["준비 전", "준비 중", "검토 필요", "주의 필요", "준비됨"];
 
 function formatDate(value: string | null) {
   if (!value) return "기록 없음";
@@ -17,67 +11,43 @@ function formatDate(value: string | null) {
   return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
+function sourceStateLabel(state: SourceHealth["state"]) {
+  return state === "stale" ? "재검토 필요" : "Codex 정기 점검";
+}
+
 export function OpsDashboard({
   applicationRuns,
   sourceHealth,
   snapshots,
   collectionRuns,
-  qualityAudits
+  qualityAudits,
+  manifestUpdatedAt
 }: {
   applicationRuns: ApplicationRun[];
   sourceHealth: SourceHealth[];
   snapshots: Snapshot[];
   collectionRuns: CollectionRunLog[];
   qualityAudits: SiteQualityAudit[];
+  manifestUpdatedAt: string;
 }) {
-  const [runs, setRuns] = useState(applicationRuns);
-  const [notice, setNotice] = useState("");
-  const [collecting, setCollecting] = useState(false);
-  const [collectionResult, setCollectionResult] = useState<CollectionResult[]>([]);
-
-  async function saveStatus(siteSlug: SiteSlug, status: ApplicationStatus) {
-    setNotice("");
-    const response = await fetch("/api/ops/application", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ siteSlug, status })
-    });
-    const data = await response.json().catch(() => ({ ok: false, message: "상태를 저장하지 못했습니다." }));
-    if (!data.ok) {
-      setNotice(data.message ?? "상태를 저장하지 못했습니다.");
-      return;
-    }
-    setRuns((current) => current.map((run) => run.siteSlug === siteSlug ? { ...run, status, lastActionAt: new Date().toISOString() } : run));
-    setNotice("신청 상태를 저장했습니다.");
-  }
-
-  async function collectNow() {
-    setCollecting(true);
-    setNotice("");
-    const response = await fetch("/api/ops/collect", { method: "POST" });
-    const data = await response.json().catch(() => ({ ok: false, message: "수집 결과를 확인하지 못했습니다." }));
-    setCollecting(false);
-    if (!data.ok) {
-      setNotice(data.message ?? "수집을 완료하지 못했습니다.");
-      return;
-    }
-    setCollectionResult(data.results ?? []);
-    setNotice("수집 작업을 실행했습니다. 결과를 확인한 뒤 새로고침하면 기록이 반영됩니다.");
-  }
-
   return (
     <main className="ops-shell">
       <header className="ops-header">
         <div>
-          <p>COLOJISTER / PRIVATE OPERATIONS</p>
-          <h1>승인 운영 보드</h1>
-          <span>수집 원천, 자동 공개 상태, 신청 단계를 한곳에서 기록합니다.</span>
+          <p>COLOJISTER / CODEX OPERATIONS</p>
+          <h1>공개 정보 운영 보드</h1>
+          <span>Codex 정기 작업이 공식 원문을 검토하고, 검증된 변경만 Git 기록과 배포에 반영합니다.</span>
         </div>
         <form action="/api/ops/logout" method="post"><button type="submit">로그아웃</button></form>
       </header>
 
+      <section className="ops-readonly-note">
+        <div><b>서버 저장소 방식</b><p>이 화면은 data/operations.json의 배포본을 읽습니다. 사이트 화면이나 Vercel 함수가 정보를 직접 쓰지 않으므로, 원문 확인 없이 공개 내용이 바뀌지 않습니다.</p></div>
+        <small>운영 파일 마지막 변경: {formatDate(manifestUpdatedAt)}</small>
+      </section>
+
       <section className="ops-summary-grid">
-        {snapshots.map((snapshot) => <article key={snapshot.siteSlug}><span>{snapshot.name}</span><b>{snapshot.count}</b><small>{snapshot.live ? "자동 공개 데이터" : "편집 기준 데이터"}</small></article>)}
+        {snapshots.map((snapshot) => <article key={snapshot.siteSlug}><span>{snapshot.name}</span><b>{snapshot.count}</b><small>{snapshot.live ? "검토된 공식 데이터 포함" : "편집 기준 데이터"}</small></article>)}
       </section>
 
       <section className="ops-panel">
@@ -96,26 +66,42 @@ export function OpsDashboard({
       </section>
 
       <section className="ops-panel">
-        <div className="ops-panel-head"><div><p>COLLECTION</p><h2>공식 원천 연결</h2></div><button type="button" onClick={collectNow} disabled={collecting}><RefreshCw size={16} className={collecting ? "is-spinning" : undefined} />{collecting ? "수집 중" : "지금 수집"}</button></div>
+        <div className="ops-panel-head"><div><p>CODEX COLLECTION</p><h2>공식 원천 점검</h2></div></div>
         <div className="ops-source-list">
-          {sourceHealth.map((source) => <article key={source.id}><div><b>{source.label}</b><small>{source.cadenceHours}시간 주기 · {source.state === "connected" ? "연결 설정됨" : "환경 설정 필요"}</small></div><a href={source.publicUrl} target="_blank" rel="noreferrer">원문 <ArrowUpRight size={14} /></a></article>)}
+          {sourceHealth.map((source) => (
+            <article key={source.id}>
+              <div>
+                <b>{source.label}</b>
+                <small>{source.cadenceHours}시간 기준 · {sourceStateLabel(source.state)}</small>
+                <p>{source.note}</p>
+              </div>
+              <a href={source.publicUrl} target="_blank" rel="noreferrer">원문 <ArrowUpRight size={14} /></a>
+            </article>
+          ))}
         </div>
-        {collectionResult.length ? <div className="ops-result-list">{collectionResult.map((result) => <p key={result.source}><b>{result.source}</b> · {result.state} · {result.count}건 · {result.detail}</p>)}</div> : null}
       </section>
 
       <section className="ops-panel">
         <div className="ops-panel-head"><div><p>APPLICATION RUNS</p><h2>애드센스 신청 상태</h2></div></div>
         <div className="ops-runs">
-          {runs.map((run) => <article key={run.siteSlug}><div><span>{run.siteSlug}</span><b>{run.mode === "stability" ? "안정화 모드" : "운영형 모드"}</b><small>마지막 기록: {formatDate(run.lastActionAt)}</small></div><label>상태<select value={run.status} onChange={(event) => saveStatus(run.siteSlug, event.target.value as ApplicationStatus)}>{statuses.map((status) => <option key={status} value={status}>{status}</option>)}</select></label><p>{run.nextAction}</p></article>)}
+          {applicationRuns.map((run) => (
+            <article key={run.siteSlug}>
+              <div><span>{run.siteSlug}</span><b>{run.mode === "stability" ? "안정화 모드" : "운영형 모드"}</b><small>마지막 기록: {formatDate(run.lastActionAt)}</small></div>
+              <div className="ops-run-state"><span>상태</span><b>{run.status}</b></div>
+              <p>{run.nextAction}</p>
+            </article>
+          ))}
         </div>
       </section>
 
       <section className="ops-panel">
-        <div className="ops-panel-head"><div><p>RECENT LOGS</p><h2>수집 이력</h2></div></div>
-        {collectionRuns.length ? <div className="ops-log-list">{collectionRuns.map((run) => <article key={run.id}><b>{run.sourceId}</b><span>{run.state} · {run.recordCount}건</span><p>{run.detail}</p><small>{formatDate(run.startedAt)}</small></article>)}</div> : <p className="ops-empty">Supabase 연결 후 첫 수집을 실행하면 여기에서 성공·실패·만료 점검 기록을 확인할 수 있습니다.</p>}
+        <div className="ops-panel-head"><div><p>RECENT LOGS</p><h2>검토 이력</h2></div></div>
+        {collectionRuns.length ? (
+          <div className="ops-log-list">{collectionRuns.map((run) => <article key={run.id}><b>{run.sourceId}</b><span>{run.state} · {run.recordCount}건</span><p>{run.detail}</p><small>{formatDate(run.startedAt)}</small></article>)}</div>
+        ) : (
+          <p className="ops-empty">첫 Codex 점검이 완료되면 실제 원문 확인, 공개 항목 수, 오류 여부가 이곳에 기록됩니다.</p>
+        )}
       </section>
-
-      {notice ? <p className="ops-notice" role="status">{notice}</p> : null}
     </main>
   );
 }

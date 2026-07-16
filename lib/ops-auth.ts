@@ -13,10 +13,4 @@ export async function hasOpsAccess() {
   return matchesSecret(cookieStore.get("ops_session")?.value, process.env.OPS_ACCESS_TOKEN);
 }
 
-export function hasCronAccess(request: Request) {
-  const authorization = request.headers.get("authorization");
-  const token = authorization?.replace(/^Bearer\s+/i, "");
-  return matchesSecret(token, process.env.CRON_SECRET);
-}
-
 export { matchesSecret };
