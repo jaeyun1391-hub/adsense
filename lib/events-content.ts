@@ -1,13 +1,7 @@
 import type { Guide, InfoItem, SiteConfig } from "@/lib/sites";
 
-function eventsDateAfter(days: number) {
-  const date = new Date();
-  date.setDate(date.getDate() + days);
-  return date.toISOString().slice(0, 10);
-}
-
-export const eventsReviewDate = eventsDateAfter(0);
-export const eventsNextReviewDate = eventsDateAfter(7);
+export const eventsReviewDate = "2026-08-03";
+export const eventsNextReviewDate = "공식 공지 변경 시";
 
 type EventLink = {
   label: string;
@@ -592,7 +586,7 @@ function createGuide(seed: EventGuideSeed): Guide {
       { label: "문화포털", url: "https://www.culture.go.kr/" }
     ],
     nextReviewAt: eventsNextReviewDate,
-    body: guideBody(seed)
+    body: []
   };
 }
 

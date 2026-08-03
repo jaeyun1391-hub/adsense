@@ -12,22 +12,46 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { CSSProperties } from "react";
-import { enrichGuide, enrichInfoItem, expandedGuides, expandedItems } from "@/lib/content-expansion";
-import { improveEditorialQuality } from "@/lib/editorial-quality";
 import {
-  enhanceExamGuide,
-  enhanceExamItem,
+  applyHousingGuideEditorial,
+  applyHousingItemEditorial,
+  housingEditorialGuides,
+  housingEditorialItems
+} from "@/lib/housing-editorial";
+import {
+  enhanceBusinessGuide,
+  enhanceBusinessItem,
+  extraBusinessGuides,
+  extraBusinessItems
+} from "@/lib/business-content";
+import {
+  applyFacilityGuideEditorial,
+  applyFacilityItemEditorial,
+  facilityEditorialGuides,
+  facilityEditorialItems
+} from "@/lib/facilities-editorial";
+import {
   examSiteOverrides,
   extraExamGuides,
   extraExamItems
 } from "@/lib/exam-content";
 import {
-  enhanceEventGuide,
-  enhanceEventItem,
+  applyExamGuideEditorial,
+  applyExamItemEditorial,
+  selectedExamGuideSlugs,
+  selectedExamItemSlugs
+} from "@/lib/exam-editorial";
+import {
   eventsSiteOverrides,
   extraEventGuides,
   extraEventItems
 } from "@/lib/events-content";
+import {
+  applyEventGuideEditorial,
+  applyEventItemEditorial,
+  selectedEventGuideSlugs,
+  selectedEventItemSlugs
+} from "@/lib/events-editorial";
 
 export type SiteSlug = "exam" | "events" | "housing" | "business" | "facilities";
 
@@ -112,7 +136,6 @@ export type SiteConfig = {
   identity: string;
   nav: { label: string; href: string }[];
   categories: string[];
-  stats: { label: string; value: string }[];
   searchPlaceholder: string;
   visualText: string;
   disclaimer: string;
@@ -120,7 +143,7 @@ export type SiteConfig = {
   guides: Guide[];
 };
 
-const today = new Date().toISOString().slice(0, 10);
+const contentReviewedAt = "2026-08-03";
 
 function item(
   slug: string,
@@ -145,7 +168,7 @@ function item(
     period,
     source,
     sourceUrl,
-    updatedAt: today,
+    updatedAt: contentReviewedAt,
     tags,
     details,
     body,
@@ -154,7 +177,7 @@ function item(
 }
 
 function guide(slug: string, title: string, summary: string, category: string, body: string[]): Guide {
-  return { slug, title, summary, category, updatedAt: today, body };
+  return { slug, title, summary, category, updatedAt: contentReviewedAt, body };
 }
 
 const examItems: InfoItem[] = [
@@ -790,11 +813,6 @@ const baseSites: SiteConfig[] = [
       { label: "가이드", href: "/exam/guides" }
     ],
     categories: ["국가기술자격", "공인검정", "어학시험", "전문자격", "공공시험"],
-    stats: [
-      { label: "상세 정보", value: "5" },
-      { label: "준비 가이드", value: "2" },
-      { label: "확인 주기", value: "주 2회" }
-    ],
     searchPlaceholder: "시험명, 자격명, 접수 키워드 검색",
     visualText: "시험 접수부터 합격 발표까지 일정 중심으로 정리",
     disclaimer: "시험 일정은 주관기관 사정에 따라 변경될 수 있습니다. 최종 접수와 응시 조건은 반드시 공식 기관에서 확인하세요.",
@@ -829,11 +847,6 @@ const baseSites: SiteConfig[] = [
       { label: "가이드", href: "/events/guides" }
     ],
     categories: ["축제", "전시", "체험", "가족 나들이", "무료 행사"],
-    stats: [
-      { label: "행사 노트", value: "5" },
-      { label: "방문 가이드", value: "2" },
-      { label: "방문 팁", value: "10+" }
-    ],
     searchPlaceholder: "지역, 행사명, 실내, 무료 키워드 검색",
     visualText: "일정과 동선까지 함께 보는 행사 방문 노트",
     disclaimer: "행사 일정, 요금, 프로그램은 주최 측 사정과 날씨에 따라 바뀔 수 있습니다. 방문 전 공식 안내를 확인하세요.",
@@ -868,15 +881,10 @@ const baseSites: SiteConfig[] = [
       { label: "가이드", href: "/housing/guides" }
     ],
     categories: ["월세지원", "전세·보증금", "임대주택", "지역별 지원", "신청서류"],
-    stats: [
-      { label: "주거지원 글", value: "40+" },
-      { label: "검토 가이드", value: "12+" },
-      { label: "공식 출처", value: "100%" }
-    ],
     searchPlaceholder: "월세, 전세, 임대주택, 지역명 검색",
     visualText: "조건과 서류를 먼저 보는 청년 주거지원 자료실",
     disclaimer: "주거지원 정보는 정책 변경과 예산 상황에 따라 달라질 수 있습니다. 신청 전 관할 기관의 최신 공고를 확인하세요.",
-    items: housingItems,
+    items: [...housingItems, ...housingEditorialItems],
     guides: [
       guide("housing-document-order", "주거지원 서류 준비 순서", "신청 직전에 다시 발급해야 하는 서류를 구분하는 방법입니다.", "서류", [
         "먼저 공고문에서 발급일 기준이 있는 서류를 표시합니다. 주민등록등본, 가족관계증명서, 소득 관련 증빙은 접수일 기준 며칠 이내 발급본을 요구하는 경우가 있습니다.",
@@ -887,7 +895,8 @@ const baseSites: SiteConfig[] = [
         "소득 기준은 개인 소득만 보는 사업과 가구 소득을 함께 보는 사업으로 나뉩니다. 부모와 별도 거주하더라도 가구 기준이 어떻게 적용되는지 확인해야 합니다.",
         "건강보험료 기준, 중위소득 기준, 소득금액증명 기준은 서로 다릅니다. 공고문이 요구하는 산정 방식을 그대로 따라야 합니다.",
         "헷갈리는 경우에는 신청 전 상담 창구에 본인의 가구 형태와 소득 자료를 기준으로 문의하는 것이 안전합니다."
-      ])
+      ]),
+      ...housingEditorialGuides
     ]
   },
   {
@@ -907,11 +916,6 @@ const baseSites: SiteConfig[] = [
       { label: "가이드", href: "/business/guides" }
     ],
     categories: ["정책자금", "창업지원", "지역지원", "교육·컨설팅", "업종별 지원"],
-    stats: [
-      { label: "공고 정리", value: "5" },
-      { label: "사업자 가이드", value: "2" },
-      { label: "마감 관리", value: "매일" }
-    ],
     searchPlaceholder: "정책자금, 업종, 지역, 교육 검색",
     visualText: "사업자에게 필요한 공고를 마감일 중심으로 정리",
     disclaimer: "지원사업은 예산 소진, 기관 심사, 공고 변경에 따라 달라질 수 있습니다. 신청 전 운영기관의 최신 공고를 확인하세요.",
@@ -946,11 +950,6 @@ const baseSites: SiteConfig[] = [
       { label: "가이드", href: "/facilities/guides" }
     ],
     categories: ["도서관", "체육시설", "문화센터", "공영주차장", "예약시설"],
-    stats: [
-      { label: "시설 정보", value: "5" },
-      { label: "이용 가이드", value: "2" },
-      { label: "지역 페이지", value: "5" }
-    ],
     searchPlaceholder: "도서관, 체육관, 주차장, 지역명 검색",
     visualText: "예약, 운영시간, 요금을 먼저 확인하는 공공시설 이용 가이드",
     disclaimer: "공공시설 운영시간, 휴관일, 예약 방식은 기관 사정에 따라 변경될 수 있습니다. 방문 전 해당 시설의 공식 안내를 확인하세요.",
@@ -975,37 +974,43 @@ export const sites: SiteConfig[] = baseSites.map((site) => {
     site.slug === "events" ? { ...site, ...eventsSiteOverrides } : site.slug === "exam" ? { ...site, ...examSiteOverrides } : site;
   const rawItems =
     site.slug === "events"
-      ? [...site.items, ...expandedItems[site.slug], ...extraEventItems]
+      ? [...site.items, ...extraEventItems].filter((item) => selectedEventItemSlugs.includes(item.slug as (typeof selectedEventItemSlugs)[number]))
       : site.slug === "exam"
-        ? [...site.items, ...expandedItems[site.slug], ...extraExamItems]
-        : [...site.items, ...expandedItems[site.slug]];
+        ? [...site.items, ...extraExamItems].filter((item) => selectedExamItemSlugs.includes(item.slug as (typeof selectedExamItemSlugs)[number]))
+        : site.slug === "business"
+          ? [...site.items, ...extraBusinessItems]
+          : site.slug === "facilities"
+            ? [...site.items, ...facilityEditorialItems]
+        : site.items;
   const rawGuides =
     site.slug === "events"
-      ? [...site.guides, ...expandedGuides[site.slug], ...extraEventGuides]
+      ? [...site.guides, ...extraEventGuides].filter((guideItem) => selectedEventGuideSlugs.includes(guideItem.slug as (typeof selectedEventGuideSlugs)[number]))
       : site.slug === "exam"
-        ? [...site.guides, ...expandedGuides[site.slug], ...extraExamGuides]
-        : [...site.guides, ...expandedGuides[site.slug]];
+        ? [...site.guides, ...extraExamGuides].filter((guideItem) => selectedExamGuideSlugs.includes(guideItem.slug as (typeof selectedExamGuideSlugs)[number]))
+        : site.slug === "business"
+          ? [...site.guides, ...extraBusinessGuides]
+          : site.slug === "facilities"
+            ? [...site.guides, ...facilityEditorialGuides]
+        : site.guides;
   const items = rawItems.map((item) => {
-    const enriched = enrichInfoItem(site.slug, item);
-    if (site.slug === "exam") return enhanceExamItem(enriched);
-    return site.slug === "events" ? enhanceEventItem(enriched) : enriched;
+    if (site.slug === "exam") return applyExamItemEditorial(item);
+    if (site.slug === "events") return applyEventItemEditorial(item);
+    if (site.slug === "business") return enhanceBusinessItem(item);
+    if (site.slug === "facilities") return applyFacilityItemEditorial(item);
+    return site.slug === "housing" ? applyHousingItemEditorial(item) : item;
   });
   const guides = rawGuides.map((guideItem) => {
-    const enriched = enrichGuide(site.slug, guideItem);
-    if (site.slug === "exam") return enhanceExamGuide(enriched);
-    return site.slug === "events" ? enhanceEventGuide(enriched) : enriched;
+    if (site.slug === "exam") return applyExamGuideEditorial(guideItem);
+    if (site.slug === "events") return applyEventGuideEditorial(guideItem);
+    if (site.slug === "business") return enhanceBusinessGuide(guideItem);
+    if (site.slug === "facilities") return applyFacilityGuideEditorial(guideItem);
+    return site.slug === "housing" ? applyHousingGuideEditorial(guideItem) : guideItem;
   });
-  const qualityChecked = improveEditorialQuality(site.slug, items, guides);
 
   return {
     ...siteConfig,
-    items: qualityChecked.items,
-    guides: qualityChecked.guides,
-    stats: siteConfig.stats.map((stat, index) => {
-      if (index === 0) return { ...stat, value: String(qualityChecked.items.length) };
-      if (index === 1) return { ...stat, value: String(qualityChecked.guides.length) };
-      return stat;
-    })
+    items,
+    guides
   };
 });
 

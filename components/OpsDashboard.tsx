@@ -12,7 +12,7 @@ function formatDate(value: string | null) {
 }
 
 function sourceStateLabel(state: SourceHealth["state"]) {
-  return state === "stale" ? "재검토 필요" : "Codex 정기 점검";
+  return state === "reference" ? "공식 원문 참조" : "확인 필요";
 }
 
 export function OpsDashboard({
@@ -34,9 +34,9 @@ export function OpsDashboard({
     <main className="ops-shell">
       <header className="ops-header">
         <div>
-          <p>COLOJISTER / CODEX OPERATIONS</p>
+          <p>COLOJISTER / EDITORIAL OPERATIONS</p>
           <h1>공개 정보 운영 보드</h1>
-          <span>Codex 정기 작업이 공식 원문을 검토하고, 검증된 변경만 Git 기록과 배포에 반영합니다.</span>
+          <span>공개 원문 링크와 편집 검토 이력을 구분해 표시합니다. 기록이 없는 상태를 완료로 표시하지 않습니다.</span>
         </div>
         <form action="/api/ops/logout" method="post"><button type="submit">로그아웃</button></form>
       </header>
@@ -47,7 +47,7 @@ export function OpsDashboard({
       </section>
 
       <section className="ops-summary-grid">
-        {snapshots.map((snapshot) => <article key={snapshot.siteSlug}><span>{snapshot.name}</span><b>{snapshot.count}</b><small>{snapshot.live ? "검토된 공식 데이터 포함" : "편집 기준 데이터"}</small></article>)}
+        {snapshots.map((snapshot) => <article key={snapshot.siteSlug}><span>{snapshot.name}</span><b>{snapshot.count}</b><small>{snapshot.live ? "검토된 공식 데이터 포함" : "편집 검토 콘텐츠"}</small></article>)}
       </section>
 
       <section className="ops-panel">
@@ -59,20 +59,22 @@ export function OpsDashboard({
               <p>1,000자 미만 상세 {audit.shortItems} · 가이드 {audit.shortGuides}</p>
               <p>빈 카테고리 {audit.emptyCategories} · 제목 중복 {audit.duplicateTitles} · 설명 중복 {audit.duplicateDescriptions}</p>
               <p>출처 누락 {audit.missingSourceLinks} · 검토일 누락 {audit.missingReviewDates} · 4회 이상 반복 문장 {audit.repeatedSentences}</p>
+              <p>80% 이상 유사 문서 {audit.highSimilarityPairs} · 최고 유사도 {Math.round(audit.highestSimilarity * 100)}%</p>
               {audit.repeatedSentenceSamples.length ? <small className="ops-quality-samples">반복 예시: {audit.repeatedSentenceSamples.join(" / ")}</small> : null}
+              {audit.highSimilaritySamples.length ? <small className="ops-quality-samples">유사 문서: {audit.highSimilaritySamples.join(" / ")}</small> : null}
             </article>
           ))}
         </div>
       </section>
 
       <section className="ops-panel">
-        <div className="ops-panel-head"><div><p>CODEX COLLECTION</p><h2>공식 원천 점검</h2></div></div>
+        <div className="ops-panel-head"><div><p>SOURCE REFERENCES</p><h2>공식 원천 목록</h2></div></div>
         <div className="ops-source-list">
           {sourceHealth.map((source) => (
             <article key={source.id}>
               <div>
                 <b>{source.label}</b>
-                <small>{source.cadenceHours}시간 기준 · {sourceStateLabel(source.state)}</small>
+                <small>{sourceStateLabel(source.state)}</small>
                 <p>{source.note}</p>
               </div>
               <a href={source.publicUrl} target="_blank" rel="noreferrer">원문 <ArrowUpRight size={14} /></a>
@@ -99,7 +101,7 @@ export function OpsDashboard({
         {collectionRuns.length ? (
           <div className="ops-log-list">{collectionRuns.map((run) => <article key={run.id}><b>{run.sourceId}</b><span>{run.state} · {run.recordCount}건</span><p>{run.detail}</p><small>{formatDate(run.startedAt)}</small></article>)}</div>
         ) : (
-          <p className="ops-empty">첫 Codex 점검이 완료되면 실제 원문 확인, 공개 항목 수, 오류 여부가 이곳에 기록됩니다.</p>
+          <p className="ops-empty">원문 확인, 공개 항목 수, 오류 여부가 기록되면 이곳에 표시됩니다.</p>
         )}
       </section>
     </main>

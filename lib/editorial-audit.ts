@@ -15,6 +15,9 @@ export type SiteQualityAudit = {
   missingReviewDates: number;
   repeatedSentences: number;
   repeatedSentenceSamples: string[];
+  highSimilarityPairs: number;
+  highestSimilarity: number;
+  highSimilaritySamples: string[];
 };
 
 function normalized(value: string) {
@@ -40,12 +43,51 @@ function repeatedSentences(blocks: string[]) {
   return [...counts.values()].filter((entry) => entry.count >= 4);
 }
 
+type SimilarityDocument = {
+  label: string;
+  text: string;
+};
+
+function tokenSet(value: string) {
+  return new Set(
+    normalized(value)
+      .replace(/[^\p{L}\p{N}\s]/gu, " ")
+      .split(/\s+/)
+      .filter((token) => token.length >= 2)
+  );
+}
+
+function jaccard(left: Set<string>, right: Set<string>) {
+  if (!left.size || !right.size) return 0;
+  let intersection = 0;
+  left.forEach((token) => {
+    if (right.has(token)) intersection += 1;
+  });
+  return intersection / (left.size + right.size - intersection);
+}
+
+function highSimilarityPairs(documents: SimilarityDocument[], threshold = 0.8) {
+  const prepared = documents.map((document) => ({ ...document, tokens: tokenSet(document.text) }));
+  const pairs: Array<{ left: string; right: string; score: number }> = [];
+  for (let leftIndex = 0; leftIndex < prepared.length; leftIndex += 1) {
+    for (let rightIndex = leftIndex + 1; rightIndex < prepared.length; rightIndex += 1) {
+      const score = jaccard(prepared[leftIndex].tokens, prepared[rightIndex].tokens);
+      if (score >= threshold) pairs.push({ left: prepared[leftIndex].label, right: prepared[rightIndex].label, score });
+    }
+  }
+  return pairs.sort((left, right) => right.score - left.score);
+}
+
 export function getEditorialAudits(): SiteQualityAudit[] {
   return sites.map((site) => {
     const guides = getEditorialGuides(site);
     const itemBodies = site.items.map((item) => item.body.join(" "));
     const guideBodies = guides.map((guide) => guide.body.join(" "));
     const repeats = repeatedSentences([...site.items.flatMap((item) => item.body), ...guides.flatMap((guide) => guide.body)]);
+    const similarityPairs = highSimilarityPairs([
+      ...site.items.map((item) => ({ label: item.title, text: [item.title, item.summary, ...item.body].join(" ") })),
+      ...guides.map((guide) => ({ label: guide.title, text: [guide.title, guide.summary, ...guide.body].join(" ") }))
+    ]);
     return {
       siteSlug: site.slug,
       siteName: site.name,
@@ -59,7 +101,10 @@ export function getEditorialAudits(): SiteQualityAudit[] {
       missingSourceLinks: site.items.filter((item) => !item.source || !item.sourceUrl).length,
       missingReviewDates: [...site.items, ...guides].filter((content) => !content.updatedAt).length,
       repeatedSentences: repeats.length,
-      repeatedSentenceSamples: repeats.slice(0, 3).map((entry) => entry.sample)
+      repeatedSentenceSamples: repeats.slice(0, 3).map((entry) => entry.sample),
+      highSimilarityPairs: similarityPairs.length,
+      highestSimilarity: similarityPairs[0]?.score ?? 0,
+      highSimilaritySamples: similarityPairs.slice(0, 3).map((pair) => `${pair.left} / ${pair.right} (${Math.round(pair.score * 100)}%)`)
     };
   });
 }

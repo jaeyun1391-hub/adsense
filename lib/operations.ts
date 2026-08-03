@@ -8,7 +8,6 @@ export type SourceDefinition = {
   label: string;
   publicUrl: string;
   allowedHosts: string[];
-  cadenceHours: number;
   mode: SubmissionMode;
 };
 
@@ -45,8 +44,7 @@ export type SourceHealth = {
   id: string;
   label: string;
   publicUrl: string;
-  cadenceHours: number;
-  state: "codex-scheduled" | "stale";
+  state: "reference";
   note: string;
 };
 
@@ -89,7 +87,6 @@ const sourceDefinitions: SourceDefinition[] = [
     label: "Q-Net 시험 일정",
     publicUrl: "https://www.q-net.or.kr/",
     allowedHosts: ["q-net.or.kr"],
-    cadenceHours: 12,
     mode: "stability"
   },
   {
@@ -98,7 +95,6 @@ const sourceDefinitions: SourceDefinition[] = [
     label: "한국관광공사 행사 정보",
     publicUrl: "https://korean.visitkorea.or.kr/",
     allowedHosts: ["visitkorea.or.kr"],
-    cadenceHours: 3,
     mode: "operating"
   },
   {
@@ -107,7 +103,6 @@ const sourceDefinitions: SourceDefinition[] = [
     label: "마이홈 청년 주거지원",
     publicUrl: "https://www.myhome.go.kr/hws/portal/main/getMgtMainYhsPage.do",
     allowedHosts: ["myhome.go.kr"],
-    cadenceHours: 6,
     mode: "stability"
   },
   {
@@ -116,7 +111,6 @@ const sourceDefinitions: SourceDefinition[] = [
     label: "LH 청약플러스 공고",
     publicUrl: "https://apply.lh.or.kr/lhapply/apply/sc/list.do",
     allowedHosts: ["lh.or.kr"],
-    cadenceHours: 6,
     mode: "stability"
   },
   {
@@ -125,7 +119,6 @@ const sourceDefinitions: SourceDefinition[] = [
     label: "기업마당 지원사업",
     publicUrl: "https://www.bizinfo.go.kr/",
     allowedHosts: ["bizinfo.go.kr"],
-    cadenceHours: 3,
     mode: "operating"
   },
   {
@@ -134,7 +127,6 @@ const sourceDefinitions: SourceDefinition[] = [
     label: "공공데이터포털 시설 예약 정보",
     publicUrl: "https://www.data.go.kr/",
     allowedHosts: ["data.go.kr"],
-    cadenceHours: 6,
     mode: "stability"
   }
 ];
@@ -203,31 +195,14 @@ export async function getPublicRecord(site: SiteConfig, slug: string) {
   return snapshot.records.find((record) => record.slug === slug) ?? null;
 }
 
-function latestRunFor(source: SourceDefinition) {
-  return manifest.collectionRuns
-    .filter((run) => run.sourceId === source.id)
-    .sort((left, right) => Date.parse(right.finishedAt ?? right.startedAt) - Date.parse(left.finishedAt ?? left.startedAt))[0];
-}
-
 export function getSourceHealth(siteSlug: SiteSlug): SourceHealth[] {
-  return sourcesForSite(siteSlug).map((source) => {
-    const latestRun = latestRunFor(source);
-    const lastCompletedAt = latestRun?.finishedAt ?? latestRun?.startedAt;
-    const ageMs = lastCompletedAt ? Date.now() - Date.parse(lastCompletedAt) : 0;
-    const maximumLogAgeMs = Math.max(source.cadenceHours * 3 * 60 * 60 * 1000, 36 * 60 * 60 * 1000);
-    const isStale = Boolean(lastCompletedAt && !Number.isNaN(ageMs) && ageMs > maximumLogAgeMs);
-
-    return {
-      id: source.id,
-      label: source.label,
-      publicUrl: source.publicUrl,
-      cadenceHours: source.cadenceHours,
-      state: isStale ? "stale" : "codex-scheduled",
-      note: latestRun
-        ? latestRun.state + " 기록: " + latestRun.detail
-        : "Codex 정기 작업이 공식 원문을 확인한 뒤, 검증 기준을 통과한 항목만 저장소에 반영합니다."
-    };
-  });
+  return sourcesForSite(siteSlug).map((source) => ({
+    id: source.id,
+    label: source.label,
+    publicUrl: source.publicUrl,
+    state: "reference",
+    note: "이 사이트의 글을 대조할 때 우선 확인하는 공식 원문입니다."
+  }));
 }
 
 function defaultApplicationRuns(): ApplicationRun[] {

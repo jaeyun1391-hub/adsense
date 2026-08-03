@@ -18,15 +18,19 @@ async function entriesForSite(site: SiteConfig): Promise<SitemapEntry[]> {
   const snapshot = await getPublicRecords(site);
   const guides = getEditorialGuides(site);
   const documents = operationalDocuments.filter((document) => document !== "adsense-playbook");
-  const now = new Date().toISOString().slice(0, 10);
+  const contentDates = [...snapshot.records, ...guides]
+    .map((content) => content.updatedAt.slice(0, 10))
+    .filter(Boolean)
+    .sort();
+  const pageLastModified = contentDates.at(-1) ?? "2026-08-03";
   return [
-    { url: publicUrl(site), lastModified: now },
-    { url: publicUrl(site, "/items"), lastModified: now },
-    { url: publicUrl(site, "/guides"), lastModified: now },
-    ...documents.map((document) => ({ url: publicUrl(site, "/" + document), lastModified: now })),
-    ...populatedCategories(site).map((category) => ({ url: publicUrl(site, "/category/" + encodeURIComponent(category)), lastModified: now })),
-    ...snapshot.records.map((record) => ({ url: publicUrl(site, "/items/" + record.slug), lastModified: record.updatedAt.slice(0, 10) || now })),
-    ...guides.map((guide) => ({ url: publicUrl(site, "/guides/" + guide.slug), lastModified: guide.updatedAt.slice(0, 10) || now }))
+    { url: publicUrl(site), lastModified: pageLastModified },
+    { url: publicUrl(site, "/items"), lastModified: pageLastModified },
+    { url: publicUrl(site, "/guides"), lastModified: pageLastModified },
+    ...documents.map((document) => ({ url: publicUrl(site, "/" + document), lastModified: pageLastModified })),
+    ...populatedCategories(site).map((category) => ({ url: publicUrl(site, "/category/" + encodeURIComponent(category)), lastModified: pageLastModified })),
+    ...snapshot.records.map((record) => ({ url: publicUrl(site, "/items/" + record.slug), lastModified: record.updatedAt.slice(0, 10) || pageLastModified })),
+    ...guides.map((guide) => ({ url: publicUrl(site, "/guides/" + guide.slug), lastModified: guide.updatedAt.slice(0, 10) || pageLastModified }))
   ];
 }
 

@@ -115,7 +115,7 @@ export function SiteExplorer({ siteSlug, records, title, compact = false }: Site
         <div className={`explorer-results ${compact ? "is-compact" : ""}`}>
           {visible.map((record) => (
             <a className="explorer-record" key={record.id} href={`/items/${record.slug}`}>
-              <div className="record-meta"><span>{record.category}</span><span>{record.region}</span><span>{record.status === "published" ? "자동 확인" : "편집 기준"}</span></div>
+              <div className="record-meta"><span>{record.category}</span><span>{record.region}</span><span>{record.status === "published" ? "원문 확인 기록" : "편집 글"}</span></div>
               <h3>{record.title}</h3>
               <p>{record.summary}</p>
               <div className="record-bottom"><span>{record.period}</span><ArrowRight size={16} /></div>

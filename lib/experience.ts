@@ -8,7 +8,6 @@ export type ExperienceDefinition = {
   descriptor: string;
   frame: "exam" | "events" | "housing" | "business" | "facilities";
   submissionMode: SubmissionMode;
-  sourceCadenceHours: number;
   primaryAction: string;
   secondaryAction: string;
   sourceFocus: string;
@@ -32,7 +31,6 @@ const definitions: Record<SiteSlug, ExperienceDefinition> = {
     descriptor: "접수부터 결과 발표까지 움직이는 일정을 한 화면에서 보는 수험생 작업대",
     frame: "exam",
     submissionMode: "stability",
-    sourceCadenceHours: 12,
     primaryAction: "접수 일정 보기",
     secondaryAction: "준비물 점검",
     sourceFocus: "Q-Net, 시행기관, 접수처 공지",
@@ -50,7 +48,6 @@ const definitions: Record<SiteSlug, ExperienceDefinition> = {
     descriptor: "날짜, 지역, 우천, 예매 상태를 먼저 읽는 실제 방문용 행사 브리핑",
     frame: "events",
     submissionMode: "operating",
-    sourceCadenceHours: 3,
     primaryAction: "이번 주 일정",
     secondaryAction: "우천 확인",
     sourceFocus: "행사 주최·예매처·관광·문화 기관 공지",
@@ -68,7 +65,6 @@ const definitions: Record<SiteSlug, ExperienceDefinition> = {
     descriptor: "조건을 단정하지 않고, 내 상황에서 먼저 확인할 순서를 만드는 주거지원 도구",
     frame: "housing",
     submissionMode: "stability",
-    sourceCadenceHours: 6,
     primaryAction: "내 상황 점검",
     secondaryAction: "공고 찾아보기",
     sourceFocus: "마이홈, LH, 지자체 주거복지 공고",
@@ -86,7 +82,6 @@ const definitions: Record<SiteSlug, ExperienceDefinition> = {
     descriptor: "공고 제목보다 마감, 대상 업종, 제외 조건, 제출 흐름을 먼저 보는 지원사업 데스크",
     frame: "business",
     submissionMode: "operating",
-    sourceCadenceHours: 3,
     primaryAction: "마감 공고 보기",
     secondaryAction: "신청 서류 점검",
     sourceFocus: "기업마당, 중소기업·지자체·운영기관 공고",
@@ -104,7 +99,6 @@ const definitions: Record<SiteSlug, ExperienceDefinition> = {
     descriptor: "예약, 취소, 요금, 주차, 이용 전화를 실제 방문 동선으로 정리하는 시설 탐색기",
     frame: "facilities",
     submissionMode: "stability",
-    sourceCadenceHours: 6,
     primaryAction: "시설 찾아보기",
     secondaryAction: "예약 전 확인",
     sourceFocus: "지자체 공공예약·시설 운영기관 안내",
@@ -145,7 +139,7 @@ export function documentDescription(document: string, siteName: string) {
     about: `${siteName}의 운영 목적, 편집 범위, 운영자 정보와 제공하지 않는 서비스를 안내합니다.`,
     "editorial-policy": `${siteName}이 공식 원문을 검토하고 편집형 가이드를 공개하는 기준을 설명합니다.`,
     sources: `${siteName}이 일정과 조건을 확인할 때 우선하는 공식 출처와 인용 원칙을 공개합니다.`,
-    updates: `${siteName}의 수집 연결, 정보 정정, 만료 처리와 편집 보강 기록을 확인합니다.`,
+    updates: `${siteName}의 원문 대조, 정보 정정, 만료 처리와 편집 보강 기록을 확인합니다.`,
     contact: `${siteName}의 정보 정정 요청 방법과 운영자 문의 창구를 안내합니다.`,
     privacy: `${siteName}의 개인정보 처리 목적, 보관 기준, 이용자 권리와 문의 방법을 안내합니다.`,
     terms: `${siteName} 정보 이용 시 적용되는 이용 범위, 책임 제한, 금지 행위를 안내합니다.`,
@@ -207,7 +201,7 @@ function makeSupplementalGuide(site: SiteConfig, seed: SupplementSeed, index: nu
     title: seed.title,
     summary: seed.summary,
     category: seed.category,
-    updatedAt: new Date().toISOString().slice(0, 10),
+    updatedAt: "2026-08-03",
     readingTime: "6분",
     audience: experience.audience,
     keyChecks: [seed.firstCheck, seed.failurePoint, "공식 원문과 변경 공지"],
@@ -238,13 +232,7 @@ export function getEditorialGuides(site: SiteConfig) {
     return true;
   });
 
-  if (base.length >= 12) return base;
-
-  const additions = supplements[site.slug]
-    .map((seed, index) => makeSupplementalGuide(site, seed, index))
-    .filter((guide) => !seen.has(guide.slug));
-
-  return [...base, ...additions];
+  return base;
 }
 
 export function populatedCategories(site: SiteConfig) {

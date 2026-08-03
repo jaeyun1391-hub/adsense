@@ -1,9 +1,7 @@
 import type { Guide, InfoItem } from "@/lib/sites";
 
-export const businessUpdatedAt = new Date().toISOString().slice(0, 10);
-const businessNextReview = new Date();
-businessNextReview.setDate(businessNextReview.getDate() + 7);
-export const businessNextReviewDate = businessNextReview.toISOString().slice(0, 10);
+export const businessUpdatedAt = "2026-08-03";
+export const businessNextReviewDate = "공식 공고 변경 시";
 
 type BusinessProfile = {
   title?: string;
@@ -1454,6 +1452,75 @@ businessProfiles["business-closure-restart"] = {
   ]
 };
 
+const additionalBusinessDefinitions = [
+  { slug: "general-management-fund", title: "일반경영안정자금의 대리대출 흐름", category: "정책자금", region: "전국" },
+  { slug: "growth-promotion-fund", title: "성장기반 정책자금에서 성장 근거를 정리하는 법", category: "정책자금", region: "전국" },
+  { slug: "emergency-management-fund", title: "긴급경영안정자금에서 피해·매출 감소 자료를 나누는 법", category: "정책자금", region: "전국" },
+  { slug: "youth-employment-fund", title: "청년고용 연계 자금의 고용 자료 확인 순서", category: "정책자금", region: "전국" },
+  { slug: "business-closure-restart", title: "폐업 정리와 재창업 지원을 구분해 보는 법", category: "업종별 지원", region: "전국" },
+  { slug: "smart-store-tech", title: "스마트상점 기술도입 지원의 사전 준비", category: "창업지원", region: "전국" },
+  { slug: "local-store-improvement", title: "지역 점포 환경개선 공고의 견적·사진 준비", category: "지역지원", region: "지역별" }
+] as const;
+
+export const extraBusinessItems: InfoItem[] = additionalBusinessDefinitions.map((definition) => {
+  const profile = businessProfiles[definition.slug];
+  return {
+    slug: definition.slug,
+    title: profile.title ?? definition.title,
+    summary: profile.summary,
+    category: definition.category,
+    region: definition.region,
+    period: profile.period,
+    source: profile.source,
+    sourceUrl: profile.sourceUrl,
+    updatedAt: businessUpdatedAt,
+    lastCheckedAt: businessUpdatedAt,
+    tags: profile.tags,
+    details: profile.details,
+    body: [],
+    faq: profile.faq
+  };
+});
+
+const businessItemDeepDives: Record<string, string[]> = {
+  "growth-promotion-fund": [
+    "## 성장이라는 표현을 매출 약속으로 바꾸지 않기",
+    "성장기반 자금을 검토할 때에는 '매출이 늘 것'이라는 기대보다 현재 어떤 변화가 이미 시작됐는지를 자료로 정리해야 합니다. 신규 거래처, 반복 구매, 생산 능력, 기술 도입 계획, 수출 준비처럼 내 사업장에 실제로 있는 사실을 구분해 적으세요. 목표 숫자는 근거가 있는 가정으로 표시하고, 지원을 받는다고 자동으로 성과가 생긴다는 식으로 설명하면 안 됩니다.",
+    "## 투자 시점과 증빙 가능 항목을 함께 봅니다",
+    "장비·시스템·인증·판로 비용은 계약과 지출 시점이 다를 수 있습니다. 공고가 요구하는 사전 승인, 공급업체 기준, 자부담, 결과보고 항목을 확인하지 않으면 사업계획의 성장 논리와 실제 집행이 어긋날 수 있습니다. 계획서에는 무엇을 언제 어디에 쓰고 어떤 자료로 결과를 설명할지까지 남겨 두는 편이 좋습니다."
+  ],
+  "emergency-management-fund": [
+    "## 어려움을 설명할 자료와 감정적 표현을 분리합니다",
+    "긴급경영 관련 공고에서는 경영상 어려움이 있다는 말만으로는 부족할 수 있습니다. 매출 변화, 피해 발생 시점, 복구에 필요한 비용, 영업 중단 여부처럼 공고가 요구하는 사실을 문서·사진·기록으로 나눠 보세요. 재난, 감염병, 지역 이슈 등 사유에 따라 증빙 방식이 달라질 수 있으므로 과거 공고의 사례를 현재 기준으로 일반화하지 않아야 합니다.",
+    "## 긴급하다고 해서 절차가 사라지지는 않습니다",
+    "지원이 필요한 상황일수록 접수 기한, 상담 창구, 대출·보증 절차, 예산 소진 여부를 순서대로 확인해야 합니다. 당장 필요한 비용과 공고가 인정하는 비용이 같은지, 이미 발생한 지출을 인정하는지, 다른 지원과 중복 제한이 있는지를 묻는 질문으로 바꾸면 준비를 더 현실적으로 할 수 있습니다."
+  ],
+  "youth-employment-fund": [
+    "## 고용 사실의 기준일을 먼저 표시합니다",
+    "청년고용 연계 자금은 대표자의 나이만 보는 사업과 근로자 고용 상태를 함께 보는 사업이 구분될 수 있습니다. 채용일, 고용보험 등 행정 기록, 근로계약, 급여 지급, 사업장 소재지처럼 공고가 보는 기준일을 각각 적어 보세요. 직원이 곧 채용될 예정이라는 계획은 현재 고용 사실과 다를 수 있으므로 추정값으로 채우지 않는 것이 좋습니다.",
+    "## 지원금과 고용 의무를 같은 표에 둡니다",
+    "인건비나 고용 연계 지원은 선정 후 유지 기간, 증빙, 중도 변경 보고가 따라올 수 있습니다. 지원액만 비교하기보다 영업 계획상 실제로 유지할 수 있는 고용 형태인지, 급여·4대보험·근로시간 관련 기록을 어떻게 관리할지를 확인해야 합니다. 노무 판단이 필요한 사안은 공고 문의처와 관련 전문가에게 별도로 확인하세요."
+  ],
+  "business-closure-restart": [
+    "## 폐업 정리와 다음 사업 준비를 한 지원으로 묶지 않습니다",
+    "점포 철거, 원상복구, 채무 조정, 재취업 교육, 재창업 사업화는 필요해 보일 수 있어도 각각의 공고가 보는 단계와 비용 기준이 다릅니다. 현재 상태가 폐업 전인지, 폐업 절차 중인지, 이미 폐업한 뒤인지와 향후 재창업 계획이 있는지를 분리해 기록하세요. 이미 발생한 비용을 나중에 소급 지원받을 수 있다고 가정하면 일정과 증빙을 놓칠 수 있습니다.",
+    "## 계획서에는 실패 원인과 다음 검증을 함께 씁니다",
+    "재창업형 프로그램을 검토한다면 이전 사업의 문제를 막연한 경기 탓으로만 적기보다, 고객·비용·입지·운영 방식에서 무엇을 바꿀지 정리하는 편이 좋습니다. 새 사업의 제품, 고객, 초기 비용, 실험 방법을 구체적으로 쓰되 지원이 확정되기 전에 큰 지출을 시작해도 되는지는 현재 공고의 절차와 상담 안내를 확인해야 합니다."
+  ],
+  "smart-store-tech": [
+    "## 기술 도입 전에는 매장의 문제를 한 문장으로 만듭니다",
+    "스마트상점 지원은 장비 이름이나 유행하는 기술을 먼저 고르는 사업이 아닙니다. 주문 대기, 재고 오류, 반복 업무, 고객 안내, 에너지 사용처럼 현재 매장에서 실제로 발생하는 문제를 적고, 도입 후 무엇이 달라져야 하는지 정리해 보세요. 필요하지 않은 장비를 지원 항목에 맞춘다고 해서 운영 효율이 자동으로 좋아지는 것은 아닙니다.",
+    "## 공급업체 제안서와 공고 기준을 별도로 확인합니다",
+    "공급업체가 제시한 기능·견적·유지보수 설명은 참고 자료일 뿐, 공고에서 인정하는 항목과 계약·설치 일정이 같은지는 따로 확인해야 합니다. 설치 전 사진, 견적서 항목, 자부담·부가세, 개인정보·결제 정보가 연결되는 경우의 운영 책임을 점검하고, 선정 전 계약이나 지출이 가능한지 현재 안내를 확인하세요."
+  ],
+  "local-store-improvement": [
+    "## 지역 공고는 관할과 사업장 상태부터 확인합니다",
+    "점포 환경개선 공고는 같은 시·군·구 안에서도 사업장 주소, 개업일, 업종, 매출 또는 기존 수혜 이력에 따라 대상이 달라질 수 있습니다. 상호나 거주지보다 사업자등록상 소재지와 실제 영업장을 먼저 대조하고, 공고의 담당 부서·접수 방식·방문 필요 여부를 기록하세요. 지역 사업은 모집 기간이 짧아 견적과 사진을 뒤늦게 준비하면 선택지가 줄어듭니다.",
+    "## 사진과 견적서는 결과보고까지 연결합니다",
+    "전후 사진은 보기 좋게 찍는 자료가 아니라 개선 필요성과 완료 결과를 비교하는 증빙이 될 수 있습니다. 견적서에는 항목별 금액, 공급가액, 부가세, 업체 정보를 분리하고 공고의 지원 범위와 대조하세요. 공사 시작일과 승인일이 뒤섞이지 않도록 일정표를 만들고, 결과보고 시 요구될 수 있는 세금계산서와 이체 기록의 명의도 미리 확인하는 편이 좋습니다."
+  ]
+};
+
 function businessBodyHeadings(item: InfoItem) {
   const headingsByCategory: Record<string, string[]> = {
     정책자금: [
@@ -1647,7 +1714,8 @@ function applyBusinessMeta(item: InfoItem, body: string[], faq: InfoItem["faq"])
     audience: `${item.category} 공고를 실제 신청 전 조건과 정산 기준까지 확인하려는 사업자`,
     keyChecks: businessKeyChecks(item),
     sourceLinks: businessSourceLinks(item),
-    nextReviewAt: businessNextReviewDate
+    nextReviewAt: businessNextReviewDate,
+    lastCheckedAt: businessUpdatedAt
   };
 }
 
@@ -1655,7 +1723,7 @@ export function enhanceBusinessItem(item: InfoItem): InfoItem {
   const profile = businessProfiles[item.slug];
 
   if (!profile) {
-    const body = [...item.body, ...businessFallbackBody(item), ...businessDeepTail(item)];
+    const body = [...item.body, ...businessFallbackBody(item)];
     const faq = [...item.faq, ...businessDefaultFaq(item)].filter(
       (faqItem, index, list) => list.findIndex((candidate) => candidate.question === faqItem.question) === index
     );
@@ -1675,7 +1743,7 @@ export function enhanceBusinessItem(item: InfoItem): InfoItem {
     details: profile.details,
     faq: profile.faq
   };
-  const body = [...makeBusinessBody(profile, profiledItem), ...businessDeepTail(profiledItem)];
+  const body = [...makeBusinessBody(profile, profiledItem), ...(businessItemDeepDives[item.slug] ?? [])];
   const faq = [...profile.faq, ...businessDefaultFaq(profiledItem)].filter(
     (faqItem, index, list) => list.findIndex((candidate) => candidate.question === faqItem.question) === index
   );
@@ -1852,6 +1920,94 @@ const businessGuides: Record<string, Pick<Guide, "summary" | "body" | "category"
   }
 };
 
+const additionalBusinessGuideDefinitions = [
+  { slug: "direct-vs-agency-loan", title: "직접대출과 대리대출의 준비 순서", category: "정책자금" },
+  { slug: "credit-before-fund", title: "정책자금 전에 신용·세금·기존 대출을 점검하는 법", category: "정책자금" },
+  { slug: "self-payment", title: "지원사업 자부담과 부가세를 계산하는 기준", category: "공고 해석" },
+  { slug: "facility-approval", title: "시설개선 공사 전 승인과 견적서를 확인하는 법", category: "시설개선" },
+  { slug: "business-plan-summary", title: "사업계획서 요약문을 고객 문제부터 쓰는 법", category: "창업지원" },
+  { slug: "excluded-industries", title: "지원 제외 업종을 실제 영업 내용으로 확인하는 법", category: "공고 해석" },
+  { slug: "settlement-docs", title: "선정 뒤 정산 서류를 지출 전부터 관리하는 법", category: "서류" },
+  { slug: "deadline-routine", title: "지원사업 마감 7일 전부터 접수 완료까지의 루틴", category: "일정" }
+] as const;
+
+export const extraBusinessGuides: Guide[] = additionalBusinessGuideDefinitions.map((definition) => {
+  const profile = businessGuides[definition.slug];
+  return {
+    slug: definition.slug,
+    title: definition.title,
+    summary: profile.summary,
+    category: definition.category,
+    updatedAt: businessUpdatedAt,
+    body: profile.body
+  };
+});
+
+const businessGuideDeepDives: Record<string, string[]> = {
+  "business-notice-reading": [
+    "## 공고 PDF와 접수 화면을 같은 순간에 확인합니다",
+    "공고문을 저장한 뒤 접수 화면을 며칠 후에 열면 서류 항목이나 안내 문구가 달라진 사실을 놓칠 수 있습니다. 신청 직전에는 공고 제목·게시일·첨부파일, 실제 신청 항목, 문의처를 함께 열어 비교하세요. 무엇이 바뀌었는지는 지원금 액수보다 내 서류·일정·지출 계획에 영향을 주는 문장부터 기록하는 것이 좋습니다.",
+    "## 한 공고의 결론을 다음 공고에 복사하지 않습니다",
+    "같은 기관과 비슷한 이름의 사업이라도 업력, 지역, 업종, 모집 회차, 예산 상황이 달라질 수 있습니다. 이전에 신청했거나 탈락한 경험은 질문을 빨리 만들 수 있는 자료일 뿐, 새 공고의 자격 판정을 대신하지 않습니다. 비교표에는 결론보다 원문 링크와 기준일을 남기세요."
+  ],
+  "business-documents": [
+    "## 대표자와 사업장 명의를 한 번 더 대조합니다",
+    "사업자등록, 통장, 납세증명, 견적서, 세금계산서에 나타나는 대표자·사업장 명의가 다르면 추가 설명이나 서류가 필요할 수 있습니다. 공동대표, 지점, 임차 사업장처럼 구조가 복잡한 경우에는 관계를 한 줄로 정리하고 공고가 요구하는 위임·동의·증빙이 있는지 확인하세요. 파일을 많이 올리는 것보다 정확한 관계 설명이 먼저입니다.",
+    "## 발급일과 제출일을 별도로 관리합니다",
+    "모든 서류를 첫날 발급하면 편해 보이지만, 공고는 신청일 기준의 최근 발급본을 요구할 수 있습니다. 공고별 폴더에 서류명, 발급일, 만료 또는 기준일, 제출 여부를 적어 두면 마감 전 재발급 대상을 쉽게 찾을 수 있습니다. 개인·사업 정보가 담긴 파일은 공개 링크가 아닌 안전한 제출 경로로만 다루세요."
+  ],
+  "direct-vs-agency-loan": [
+    "## 접수 완료와 자금 실행을 같은 단계로 보지 않습니다",
+    "직접대출과 대리대출은 신청 시스템에 정보를 넣는 단계 이후에 심사·보증·은행 절차가 다르게 이어질 수 있습니다. 어느 기관이 어떤 순서로 자료를 검토하는지, 추가 방문이나 보완이 필요한지 공고와 안내문에서 확인하세요. 접수번호를 받았다는 사실만으로 입금일이나 승인 가능성을 확정해서는 안 됩니다.",
+    "## 상담에는 현재 부채와 자금 용도를 함께 가져갑니다",
+    "운전자금, 시설자금, 기존 대출 상환 같은 목적을 섞어 설명하면 상담 내용이 모호해질 수 있습니다. 필요한 금액, 사용 시점, 기존 대출·보증 상태, 세금 자료의 준비 여부를 정리해 질문하세요. 대출과 보증은 개인·사업장 상황에 따라 달라질 수 있으므로 최종 조건은 현재 금융기관과 공식 공고로 확인해야 합니다."
+  ],
+  "credit-before-fund": [
+    "## 점수 하나보다 발급 가능한 서류를 먼저 봅니다",
+    "신용점수만 확인하고 안심하기보다 국세·지방세 납세증명이 발급되는지, 연체나 휴폐업 같은 상태가 있는지, 기존 정책자금 수혜와 상환 일정이 어떤지 점검해야 합니다. 지원사업의 제한은 한 화면의 점수로 정리되지 않는 경우가 많습니다. 현재 상태가 애매하면 추정하지 말고 상담 창구에 어떤 자료가 필요한지 문의하세요.",
+    "## 해결 가능한 보완과 시간이 필요한 문제를 나눕니다",
+    "파일 누락이나 최신 증명서 재발급은 마감 전 보완할 수 있지만, 체납·연체·사업장 정보 불일치는 시간이 필요할 수 있습니다. 마감에 맞추기 위해 사실을 숨기거나 서류를 임의로 바꾸면 안 됩니다. 이번 회차에서 확인할 것과 다음 공고 전 해결할 것을 분리해 기록하면 무리한 신청을 줄일 수 있습니다."
+  ],
+  "self-payment": [
+    "## 견적서의 총액과 지원 기준 금액을 분리합니다",
+    "'몇 퍼센트 지원'이라는 문구는 공급가액, 부가세, 자부담, 인정 한도 중 어디에 적용되는지에 따라 실제 부담을 다르게 만듭니다. 견적서에서 항목별 공급가액과 부가세를 나누고, 공고가 인정하는 비용인지, 자부담을 언제 어떤 계좌로 납부해야 하는지 확인하세요. 계산 예시는 원리를 설명할 뿐 실제 지원액을 보장하지 않습니다.",
+    "## 현금 흐름에는 정산 시점도 넣습니다",
+    "사업자가 먼저 결제하고 나중에 정산받는 구조라면 지원금 비율이 높아도 초기 현금 부담이 클 수 있습니다. 계약금, 중도금, 잔금, 자부담, 부가세, 정산 완료 시점을 달력에 함께 적고, 영업에 필요한 운영자금을 침해하지 않는지 살펴보세요. 세무상 처리나 환급 여부는 공고와 세무 기준을 따로 확인해야 합니다."
+  ],
+  "facility-approval": [
+    "## 공사 시작 전의 사진과 승인일을 연결합니다",
+    "시설개선형 지원은 필요한 공사라는 사실만으로 비용이 인정되지는 않을 수 있습니다. 공고가 요구하는 현장 사진, 견적 비교, 사전 승인, 공급업체 요건을 확인한 뒤 진행하세요. 공사 전·후의 상태를 같은 위치에서 비교할 수 있도록 기록하면 결과보고 때 설명이 쉬워지지만, 사진 자체가 선정이나 정산을 보장하지는 않습니다.",
+    "## 변경이 생기면 먼저 계약서를 고치지 않습니다",
+    "선정 후 공사 범위나 업체·금액이 바뀌면 기존 견적서와 공고의 변경 절차를 확인해야 합니다. 담당기관의 사전 승인이 필요한 상황에서 임의로 공사를 진행하면 인정 범위가 달라질 수 있습니다. 변경 사유, 문의 일시, 답변, 수정 견적서를 같은 폴더에 저장하고 세금계산서와 이체 명의도 사업장 기준으로 대조하세요."
+  ],
+  "business-plan-summary": [
+    "## 멋진 표현보다 검증 가능한 문장을 씁니다",
+    "사업계획서 요약에서 '혁신적' 또는 '차별화'라고만 쓰면 평가자는 무엇이 다른지 알기 어렵습니다. 고객이 겪는 불편, 현재 확인한 근거, 제공할 해결 방식, 첫 실행 일정, 지원금 사용 항목을 구체적으로 나누세요. 아직 검증하지 않은 내용은 사실처럼 쓰지 말고 어떤 방식으로 확인할 계획인지 설명하는 편이 신뢰를 줍니다.",
+    "## 지원금 사용은 활동과 결과로 연결합니다",
+    "촬영비·시제품·광고·장비·인증 등 비용을 적을 때는 단순한 구매 목록으로 끝내지 말고, 그 지출로 어떤 실험 또는 고객 접점이 생기는지 적어 보세요. 공고가 허용하지 않는 비용을 넣으면 전체 계획이 흔들릴 수 있으므로 첨부파일의 집행 기준을 먼저 확인해야 합니다. 최종 평가는 공고별 심사 기준을 따릅니다."
+  ],
+  "excluded-industries": [
+    "## 등록 업종과 실제 매출 구조가 다른 경우를 적습니다",
+    "복합 업종, 온라인 판매와 오프라인 매장을 함께 운영하는 경우에는 사업자등록증의 업태·종목만으로 실제 영업 내용을 설명하기 어려울 수 있습니다. 공고의 제외 업종 목록과 업종코드, 주된 매출, 판매 품목을 나란히 정리하고 애매한 부분은 담당기관에 문의하세요. 커뮤니티의 '가능했다'는 사례는 내 사업장의 판정을 대신할 수 없습니다.",
+    "## 제한 문구는 제목보다 각주에 있을 수 있습니다",
+    "공고 본문에 대상 업종이 적혀 있어도 별도 첨부파일의 융자제외 업종, 중복 수혜, 프랜차이즈·특수 관계인 제한이 적용될 수 있습니다. 한 줄의 요약으로 결론을 내리지 말고 공고 PDF, FAQ, 신청 화면의 안내를 모두 확인하세요. 답변을 받으면 당시 공고의 제목과 날짜를 함께 기록하는 것이 좋습니다."
+  ],
+  "settlement-docs": [
+    "## 지출 전에 정산 안내문을 읽습니다",
+    "선정 뒤에는 비용을 먼저 쓰고 나중에 증빙을 맞추는 방식이 아니라, 인정 가능한 결제·계약·세금계산서·이체 방식부터 확인해야 합니다. 같은 견적 항목이라도 승인된 범위와 다르거나 지출 기간 밖에 있으면 정산에서 제외될 수 있습니다. 정산 안내문과 협약서의 날짜·명의·원본 보관 요건을 한 표로 정리하세요.",
+    "## 결과물은 마지막에 만들지 않습니다",
+    "시설, 디자인, 광고, 교육처럼 결과 형태가 다른 사업은 진행 중 사진·파일·보고 자료를 남기는 방식도 달라집니다. 사업을 시작할 때부터 전후 비교가 필요한 장면, 납품 확인, 고객 반응, 성과 지표를 정해 두면 마감에 결과보고서를 급히 채우는 일을 줄일 수 있습니다. 보완 요청이 오면 기존 제출본과 공고 기준을 먼저 대조하세요.",
+    "## 제출본과 원본의 위치를 나눠 둡니다",
+    "정산 포털에 올린 PDF와 원래 받은 전자세금계산서·계약서·사진 원본을 같은 이름으로 섞어 두면 보완 때 무엇을 수정했는지 알기 어렵습니다. 제출일과 파일 목적을 표시해 따로 보관하고, 기관이 원본 제출이나 추가 확인을 요청할 때만 지정된 안전한 경로로 전달하세요."
+  ],
+  "deadline-routine": [
+    "## 마감 당일에는 새 내용을 쓰지 않는 편이 낫습니다",
+    "신청서의 핵심 문장, 견적서, 증명서는 마감 직전보다 며칠 전에 준비하고 마지막 날에는 사실관계와 업로드 상태를 확인하는 데 시간을 쓰세요. 본인인증, 파일 용량, 서버 접속, 공동대표 동의처럼 예상하지 못한 문제가 생길 수 있습니다. 접수 마감 시각은 날짜만이 아니라 시간과 시간대까지 공식 안내에서 확인해야 합니다.",
+    "## 제출 완료 뒤에도 확인할 일이 남습니다",
+    "완료 화면과 접수번호, 제출 파일 목록, 제출 시각을 저장하고 서류 보완·발표·협약 일정을 달력에 따로 넣으세요. 제출 직후에는 내용을 임의로 수정하거나 다시 올리기보다 기관이 안내한 변경·보완 절차를 확인해야 합니다. 한 번의 접수 결과를 다음 공고의 자격 판단이나 승인 가능성으로 일반화하지 않는 것이 중요합니다."
+  ]
+};
+
 function businessGuideTail(guide: Guide) {
   return [
     "## 실제 적용 예시",
@@ -1914,7 +2070,7 @@ export function enhanceBusinessGuide(guide: Guide): Guide {
     updatedAt: businessUpdatedAt,
     body: profile.body
   };
-  const body = [...profile.body, ...businessGuideTail(profiledGuide)];
+  const body = [...profile.body, ...(businessGuideDeepDives[guide.slug] ?? [])];
 
   return {
     ...profiledGuide,

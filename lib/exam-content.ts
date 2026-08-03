@@ -1,13 +1,7 @@
 import type { Guide, InfoItem, SiteConfig } from "@/lib/sites";
 
-function examDateAfter(days: number) {
-  const date = new Date();
-  date.setDate(date.getDate() + days);
-  return date.toISOString().slice(0, 10);
-}
-
-export const examReviewDate = examDateAfter(0);
-export const examNextReviewDate = examDateAfter(7);
+export const examReviewDate = "2026-08-03";
+export const examNextReviewDate = "공식 공지 변경 시";
 
 type ExamLink = {
   label: string;
@@ -797,7 +791,7 @@ export const extraExamGuides: Guide[] = extraGuideSeeds.map((seed) => ({
   summary: seed.summary,
   category: seed.category,
   updatedAt: examReviewDate,
-  body: guideBody(seed),
+  body: [],
   readingTime: "6분 읽기",
   audience: seed.focus,
   keyChecks: seed.checklist,
