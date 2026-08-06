@@ -274,6 +274,6 @@
     {"id":"collect-busan-events-20260806","sourceId":"busan-events","siteSlug":"events","state":"reviewed","detail":"부산축제조직위원회 행사 상세와 전용 누리집 3건을 대조하고 미공개 티켓 정보는 추정하지 않았습니다.","recordCount":3,"startedAt":"2026-08-06T13:00:00+09:00","finishedAt":"2026-08-06T16:05:00+09:00"}
   ],
   "applicationRuns": [
-    {"siteSlug":"events","mode":"operating","status":"준비 중","lastActionAt":"2026-08-06T18:40:00+09:00","nextAction":"배포 후 전체 URL과 공식 링크를 재검사하고 실제 운영 로그를 확인한 뒤 재신청합니다."}
+    {"siteSlug":"events","mode":"operating","status":"준비됨","lastActionAt":"2026-08-06T18:40:00+09:00","nextAction":"라이브 URL, 공식 링크, 메타데이터와 광고 연결을 검증했습니다. 애드센스에서 문제 수정 확인 후 검토를 요청합니다."}
   ]
 }
