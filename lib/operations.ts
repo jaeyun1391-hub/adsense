@@ -21,6 +21,8 @@ export type PublishedRecord = {
   category: string;
   region: string;
   period: string;
+  startDate?: string;
+  endDate?: string;
   sourceName: string;
   sourceUrl: string;
   status: "published" | "reference" | "stale";
@@ -30,6 +32,10 @@ export type PublishedRecord = {
   tags: string[];
   details: Record<string, string>;
 };
+
+export function readCurrentTimestamp() {
+  return Date.now();
+}
 
 export type RecordRevision = {
   id: string;
@@ -90,11 +96,19 @@ const sourceDefinitions: SourceDefinition[] = [
     mode: "stability"
   },
   {
-    id: "visitkorea-events",
+    id: "seoul-events",
     siteSlug: "events",
-    label: "한국관광공사 행사 정보",
-    publicUrl: "https://korean.visitkorea.or.kr/",
-    allowedHosts: ["visitkorea.or.kr"],
+    label: "서울특별시 펀서울 행사 상세",
+    publicUrl: "https://festival.seoul.go.kr/",
+    allowedHosts: ["festival.seoul.go.kr"],
+    mode: "operating"
+  },
+  {
+    id: "busan-events",
+    siteSlug: "events",
+    label: "부산축제조직위원회 행사 공지",
+    publicUrl: "https://www.bfo.or.kr/",
+    allowedHosts: ["bfo.or.kr"],
     mode: "operating"
   },
   {
@@ -147,6 +161,8 @@ function toReferenceRecord(site: SiteConfig, item: InfoItem): PublishedRecord {
     category: item.category,
     region: item.region,
     period: item.period,
+    startDate: item.eventSchema?.startDate,
+    endDate: item.eventSchema?.endDate,
     sourceName: item.source,
     sourceUrl: item.sourceUrl,
     status: "reference",
@@ -181,7 +197,21 @@ function isPublishableRecord(record: PublishedRecord, siteSlug: SiteSlug) {
 export async function getPublicRecords(site: SiteConfig) {
   const published = manifest.records
     .filter((record) => isPublishableRecord(record, site.slug))
-    .sort((left, right) => Date.parse(right.lastCheckedAt) - Date.parse(left.lastCheckedAt));
+    .sort((left, right) => {
+      if (site.slug === "events" && left.startDate && right.startDate) {
+        const now = Date.now();
+        const leftStart = Date.parse(left.startDate);
+        const rightStart = Date.parse(right.startDate);
+        const leftEnd = Date.parse(left.endDate ?? left.startDate) + 86_399_999;
+        const rightEnd = Date.parse(right.endDate ?? right.startDate) + 86_399_999;
+        const rank = (start: number, end: number) => (start <= now && end >= now ? 0 : start > now ? 1 : 2);
+        const rankDifference = rank(leftStart, leftEnd) - rank(rightStart, rightEnd);
+        if (rankDifference !== 0) return rankDifference;
+        if (rank(leftStart, leftEnd) === 0) return leftEnd - rightEnd;
+        return leftStart - rightStart;
+      }
+      return Date.parse(right.lastCheckedAt) - Date.parse(left.lastCheckedAt);
+    });
   const publishedSlugs = new Set(published.map((record) => record.slug));
   const editorial = site.items
     .map((item) => toReferenceRecord(site, item))

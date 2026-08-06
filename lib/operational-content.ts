@@ -1,4 +1,5 @@
 import { getExperience, publicOperator } from "@/lib/experience";
+import { getEventsOperationalBlocks } from "@/lib/events-operational-content";
 import type { SiteConfig, SiteSlug } from "@/lib/sites";
 
 export type OperatingDocumentKey =
@@ -100,6 +101,7 @@ export function operatingProfile(site: SiteConfig) {
 }
 
 export function operationalDocumentBlocks(site: SiteConfig, document: OperatingDocumentKey): string[] {
+  if (site.slug === "events") return getEventsOperationalBlocks(document);
   const { experience, profile, categories, examples, sourceFocus, operator } = context(site);
   const overview = `${site.name}은 ${experience.audience}이 실제 행동 전에 확인해야 할 기준을 편집하는 정보 서비스입니다. ${profile.scope}`;
   const sourceBoundary = `이 사이트의 요약은 ${sourceFocus}에서 읽어야 할 순서를 돕습니다. 운영기관의 공고·예약·접수 화면은 변경될 수 있으므로, 행동 직전에는 원문과 현재 화면을 다시 확인해야 합니다.`;
@@ -311,6 +313,7 @@ export function operationalDocumentBlocks(site: SiteConfig, document: OperatingD
 }
 
 export function operationalDocumentAddendum(site: SiteConfig, document: OperatingDocumentKey, blocks: string[]) {
+  if (site.slug === "events") return [];
   if (blocks.join(" ").length >= 1000) return [];
 
   const { profile, categories, examples, sourceFocus } = context(site);

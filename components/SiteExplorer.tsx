@@ -20,8 +20,39 @@ const modeLabels: Record<SiteSlug, string[]> = {
   facilities: ["목록", "지도", "예약", "이용 전"]
 };
 
+function eventBoundary(value: string, end = false) {
+  const normalized = /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ? `${value}T${end ? "23:59:59.999" : "00:00:00"}+09:00`
+    : value;
+  return Date.parse(normalized);
+}
+
 function matchesMode(siteSlug: SiteSlug, record: PublishedRecord, mode: string) {
-  if (mode === "전체" || mode === "오늘" || mode === "이번 주" || mode === "이번 달" || mode === "목록" || mode === "지도") return true;
+  if (siteSlug === "events" && ["오늘", "이번 주", "이번 달"].includes(mode)) {
+    if (!record.startDate) return false;
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const start = new Date(record.startDate);
+    const end = new Date(record.endDate ?? record.startDate);
+    const normalizedStart = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    const normalizedEnd = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59);
+
+    if (mode === "오늘") return normalizedStart <= today && normalizedEnd >= today;
+    if (mode === "이번 주") {
+      const day = today.getDay() || 7;
+      const weekStart = new Date(today);
+      weekStart.setDate(today.getDate() - day + 1);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      weekEnd.setHours(23, 59, 59, 999);
+      return normalizedStart <= weekEnd && normalizedEnd >= weekStart;
+    }
+
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59);
+    return normalizedStart <= monthEnd && normalizedEnd >= monthStart;
+  }
+  if (mode === "전체" || mode === "목록" || mode === "지도") return true;
   const haystack = [record.title, record.summary, record.category, record.region, record.period, ...record.tags].join(" ").toLowerCase();
   const needles: Record<string, string[]> = {
     접수: ["접수", "원서"],
@@ -39,6 +70,16 @@ function matchesMode(siteSlug: SiteSlug, record: PublishedRecord, mode: string) 
     "이용 전": ["주차", "요금", "취소", "이용"]
   };
   return (needles[mode] ?? []).some((needle) => haystack.includes(needle));
+}
+
+function eventState(record: PublishedRecord) {
+  if (!record.startDate) return "일정 확인";
+  const now = Date.now();
+  const start = eventBoundary(record.startDate);
+  const end = eventBoundary(record.endDate ?? record.startDate, true);
+  if (start <= now && end >= now) return "진행 중";
+  if (start > now) return "예정";
+  return "종료";
 }
 
 export function SiteExplorer({ siteSlug, records, title, compact = false }: SiteExplorerProps) {
@@ -115,7 +156,7 @@ export function SiteExplorer({ siteSlug, records, title, compact = false }: Site
         <div className={`explorer-results ${compact ? "is-compact" : ""}`}>
           {visible.map((record) => (
             <a className="explorer-record" key={record.id} href={`/items/${record.slug}`}>
-              <div className="record-meta"><span>{record.category}</span><span>{record.region}</span><span>{record.status === "published" ? "원문 확인 기록" : "편집 글"}</span></div>
+              <div className="record-meta"><span>{record.category}</span><span>{record.region}</span><span>{siteSlug === "events" ? eventState(record) : record.status === "published" ? "원문 확인 기록" : "편집 글"}</span></div>
               <h3>{record.title}</h3>
               <p>{record.summary}</p>
               <div className="record-bottom"><span>{record.period}</span><ArrowRight size={16} /></div>

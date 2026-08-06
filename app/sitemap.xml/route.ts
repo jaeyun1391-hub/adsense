@@ -7,7 +7,7 @@ import { sites, type SiteConfig } from "@/lib/sites";
 
 export const dynamic = "force-dynamic";
 
-type SitemapEntry = { url: string; lastModified: string };
+type SitemapEntry = { url: string; lastModified?: string };
 
 function siteForHost(host: string) {
   const normalized = host.toLowerCase().split(":")[0].replace(/^www\./, "");
@@ -17,20 +17,20 @@ function siteForHost(host: string) {
 async function entriesForSite(site: SiteConfig): Promise<SitemapEntry[]> {
   const snapshot = await getPublicRecords(site);
   const guides = getEditorialGuides(site);
-  const documents = operationalDocuments.filter((document) => document !== "adsense-playbook");
+  const documents = operationalDocuments;
   const contentDates = [...snapshot.records, ...guides]
-    .map((content) => content.updatedAt.slice(0, 10))
+    .map((content) => content.updatedAt)
     .filter(Boolean)
     .sort();
-  const pageLastModified = contentDates.at(-1) ?? "2026-08-03";
+  const pageLastModified = contentDates.at(-1);
   return [
     { url: publicUrl(site), lastModified: pageLastModified },
     { url: publicUrl(site, "/items"), lastModified: pageLastModified },
     { url: publicUrl(site, "/guides"), lastModified: pageLastModified },
-    ...documents.map((document) => ({ url: publicUrl(site, "/" + document), lastModified: pageLastModified })),
-    ...populatedCategories(site).map((category) => ({ url: publicUrl(site, "/category/" + encodeURIComponent(category)), lastModified: pageLastModified })),
-    ...snapshot.records.map((record) => ({ url: publicUrl(site, "/items/" + record.slug), lastModified: record.updatedAt.slice(0, 10) || pageLastModified })),
-    ...guides.map((guide) => ({ url: publicUrl(site, "/guides/" + guide.slug), lastModified: guide.updatedAt.slice(0, 10) || pageLastModified }))
+    ...documents.map((document) => ({ url: publicUrl(site, "/" + document) })),
+    ...populatedCategories(site).map((category) => ({ url: publicUrl(site, "/category/" + encodeURIComponent(category)) })),
+    ...snapshot.records.map((record) => ({ url: publicUrl(site, "/items/" + record.slug), lastModified: record.updatedAt || pageLastModified })),
+    ...guides.map((guide) => ({ url: publicUrl(site, "/guides/" + guide.slug), lastModified: guide.updatedAt || pageLastModified }))
   ];
 }
 
@@ -44,7 +44,7 @@ export async function GET() {
   const entries = (await Promise.all((site ? [site] : sites).map(entriesForSite))).flat();
   const body = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${entries.map((entry) => `  <url><loc>${escapeXml(entry.url)}</loc><lastmod>${entry.lastModified}</lastmod></url>`).join("\n")}
+${entries.map((entry) => `  <url><loc>${escapeXml(entry.url)}</loc>${entry.lastModified ? `<lastmod>${escapeXml(entry.lastModified)}</lastmod>` : ""}</url>`).join("\n")}
 </urlset>
 `;
   return new Response(body, { headers: { "content-type": "application/xml; charset=utf-8" } });

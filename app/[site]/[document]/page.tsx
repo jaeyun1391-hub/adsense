@@ -23,8 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     site,
     documentLabel(document),
     documentDescription(document, site.name),
-    "/" + document,
-    document === "adsense-playbook"
+    "/" + document
   );
 }
 

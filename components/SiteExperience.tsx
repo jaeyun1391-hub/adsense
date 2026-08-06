@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { ArrowRight, ArrowUpRight, CalendarClock, ExternalLink, FileCheck2, Flag, House, MapPinned, ShieldCheck } from "lucide-react";
+import { ArrowRight, ArrowUpRight, CalendarClock, CalendarDays, CircleAlert, ExternalLink, FileCheck2, Flag, House, MapPinned, ShieldCheck } from "lucide-react";
 import { ExperienceShell } from "@/components/ExperienceShell";
 import { HousingPathFinder } from "@/components/HousingPathFinder";
 import { SiteExplorer } from "@/components/SiteExplorer";
 import { RichContent } from "@/components/RichContent";
 import { StructuredData } from "@/components/StructuredData";
 import { documentLabel, getEditorialGuides, getExperience, publicOperator } from "@/lib/experience";
-import { getPublicRecord, getPublicRecords, getSourceHealth, type PublishedRecord } from "@/lib/operations";
+import { getPublicRecord, getPublicRecords, getSourceHealth, readCurrentTimestamp, type PublishedRecord } from "@/lib/operations";
 import { operationalDocumentAddendum, operationalDocumentBlocks, type OperatingDocumentKey } from "@/lib/operational-content";
 import { publicUrl } from "@/lib/seo";
 import { getItem, type Guide, type SiteConfig, type SiteSlug } from "@/lib/sites";
@@ -21,8 +21,7 @@ export const operationalDocuments = [
   "terms",
   "copyright",
   "youth-policy",
-  "email-collection",
-  "adsense-playbook"
+  "email-collection"
 ] as const;
 
 export type OperationalDocument = (typeof operationalDocuments)[number];
@@ -51,6 +50,13 @@ function SourceState({ site, live }: { site: SiteConfig; live: boolean }) {
   );
 }
 
+function eventBoundary(value: string, end = false) {
+  const normalized = /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ? `${value}T${end ? "23:59:59.999" : "00:00:00"}+09:00`
+    : value;
+  return Date.parse(normalized);
+}
+
 function ExamHome({ site, records, live }: { site: SiteConfig; records: PublishedRecord[]; live: boolean }) {
   const experience = getExperience(site.slug);
   return (
@@ -69,23 +75,54 @@ function ExamHome({ site, records, live }: { site: SiteConfig; records: Publishe
   );
 }
 
-function EventsHome({ site, records, live }: { site: SiteConfig; records: PublishedRecord[]; live: boolean }) {
-  const experience = getExperience(site.slug);
-  const lead = records[0];
+function EventsHome({ site, records, live, currentTimestamp }: { site: SiteConfig; records: PublishedRecord[]; live: boolean; currentTimestamp: number }) {
+  const active = records.filter((record) => {
+    if (!record.startDate) return false;
+    return eventBoundary(record.startDate) <= currentTimestamp && eventBoundary(record.endDate ?? record.startDate, true) >= currentTimestamp;
+  });
+  const next = records.filter((record) => record.startDate && eventBoundary(record.startDate) > currentTimestamp);
+  const formatRange = (record: PublishedRecord) => {
+    if (!record.startDate) return record.period;
+    const start = new Date(record.startDate);
+    const end = new Date(record.endDate ?? record.startDate);
+    const startLabel = `${start.getMonth() + 1}.${String(start.getDate()).padStart(2, "0")}`;
+    const endLabel = `${end.getMonth() + 1}.${String(end.getDate()).padStart(2, "0")}`;
+    return startLabel === endLabel ? startLabel : `${startLabel}–${endLabel}`;
+  };
   return (
     <ExperienceShell site={site} active="home">
-      <section className="events-front experience-width">
-        <div className="events-front-intro"><p>THIS WEEKEND / EDITED FOR A REAL VISIT</p><h1>이번 주말,<br />출발 전에 읽을<br />행사 브리핑.</h1><p>{experience.descriptor}</p></div>
-        <article className="events-lead-story">
-          <span>EDITOR&apos;S NOTE</span>
-          <h2>{lead?.title ?? "이번 주 행사 정보를 확인하고 있습니다."}</h2>
-          <p>{lead?.summary}</p>
-          {lead ? <Link href={`/items/${lead.slug}`}>방문 브리핑 읽기 <ArrowRight size={16} /></Link> : null}
-        </article>
-        <aside className="events-conditions"><b>출발 전 4가지</b><ol><li>예매·현장권</li><li>무료 범위</li><li>우천 변경</li><li>교통·귀가</li></ol></aside>
+      <section className="events-desk experience-width">
+        <header className="events-desk-heading">
+          <div><p>VERIFIED EVENT DESK</p><h1>날짜가 확인된<br />행사만 올립니다.</h1></div>
+          <div className="events-desk-status"><span><i /> 공식 상세 직접 연결</span><b>{records.length}건</b><small>2026년 8월 6일 편집 점검</small></div>
+        </header>
+        <div className="events-now-board">
+          <section>
+            <header><div><p>OPEN NOW</p><h2>지금 진행 중</h2></div><CalendarDays size={21} /></header>
+            <div className="events-now-list">
+              {active.map((record) => <Link key={record.id} href={`/items/${record.slug}`}><time>{formatRange(record)}</time><div><span>{record.region}</span><b>{record.title}</b><p>{record.period}</p></div><ArrowUpRight size={17} /></Link>)}
+              {!active.length ? <p className="events-empty">현재 진행 중으로 확인된 행사가 없습니다.</p> : null}
+            </div>
+          </section>
+          <aside>
+            <CircleAlert size={21} />
+            <p>이번 주 확인 메모</p>
+            <h2>표시되지 않은 정보는<br />임의로 채우지 않습니다.</h2>
+            <dl><div><dt>확정</dt><dd>날짜·장소·공식 원문</dd></div><div><dt>예정</dt><dd>주최 측이 예정으로 표기</dd></div><div><dt>미공개</dt><dd>가격·예매 발표 전</dd></div></dl>
+            <Link href="/editorial-policy">편집 기준 확인 <ArrowRight size={15} /></Link>
+          </aside>
+        </div>
       </section>
-      <section className="events-docket"><div className="experience-width"><div className="section-intro"><p>WEEKEND DOCKET</p><h2>날짜보다 상황으로 고르기</h2></div><SiteExplorer siteSlug={site.slug} records={records} compact /></div></section>
-      <section className="experience-width events-bottom-grid"><div><p className="eyebrow">편집 원칙</p><h2>행사 소개보다<br />변경 가능성을 먼저.</h2></div><SourceState site={site} live={live} /></section>
+      <section className="events-calendar-band"><div className="experience-width"><header className="events-calendar-head"><div><p>UPCOMING</p><h2>다음 일정</h2></div><Link href="/items">전체 일정 <ArrowRight size={15} /></Link></header><div className="events-calendar-list">{next.slice(0, 7).map((record) => <Link key={record.id} href={`/items/${record.slug}`}><time>{formatRange(record)}</time><span>{record.region}</span><b>{record.title}</b><small>{record.period}</small><ArrowRight size={16} /></Link>)}</div></div></section>
+      <section className="events-filter-desk"><div className="experience-width"><div className="section-intro"><p>DATE FILTER</p><h2>오늘·이번 주·이번 달로 좁히기</h2><span>필터는 실제 시작일과 종료일을 계산합니다.</span></div><SiteExplorer siteSlug={site.slug} records={records} compact /></div></section>
+      <nav className="events-category-links experience-width" aria-label="행사 유형별 탐색">
+        <p>행사 유형으로 보기</p>
+        {site.categories.map((category) => {
+          const count = records.filter((record) => record.category === category).length;
+          return <Link key={category} href={`/category/${encodeURIComponent(category)}`}><span>{category}</span><b>{count}건</b><ArrowRight size={15} /></Link>;
+        })}
+      </nav>
+      <section className="experience-width events-source-row"><div><p className="eyebrow">SOURCE CHECK</p><h2>기관 첫 화면이 아닌<br />행사별 원문을 연결합니다.</h2></div><SourceState site={site} live={live} /></section>
     </ExperienceShell>
   );
 }
@@ -135,7 +172,7 @@ function FacilitiesHome({ site, records, live }: { site: SiteConfig; records: Pu
 export async function SiteHome({ site }: { site: SiteConfig }) {
   const snapshot = await getPublicRecords(site);
   if (site.slug === "exam") return <ExamHome site={site} records={snapshot.records} live={snapshot.live} />;
-  if (site.slug === "events") return <EventsHome site={site} records={snapshot.records} live={snapshot.live} />;
+  if (site.slug === "events") return <EventsHome site={site} records={snapshot.records} live={snapshot.live} currentTimestamp={readCurrentTimestamp()} />;
   if (site.slug === "housing") return <HousingHome site={site} records={snapshot.records} live={snapshot.live} />;
   if (site.slug === "business") return <BusinessHome site={site} records={snapshot.records} live={snapshot.live} />;
   return <FacilitiesHome site={site} records={snapshot.records} live={snapshot.live} />;
@@ -144,6 +181,9 @@ export async function SiteHome({ site }: { site: SiteConfig }) {
 export async function SiteItemsView({ site, heading, records: suppliedRecords }: { site: SiteConfig; heading?: string; records?: PublishedRecord[] }) {
   const snapshot = suppliedRecords ? { records: suppliedRecords, live: false } : await getPublicRecords(site);
   const experience = getExperience(site.slug);
+  if (site.slug === "events") {
+    return <ExperienceShell site={site} active="items"><section className="events-index-head experience-width"><p>EVENT CALENDAR / VERIFIED LINKS</p><h1>{heading ?? "확인된 행사 일정"}</h1><div><span>총 {snapshot.records.length}건</span><p>개별 공식 페이지에서 날짜와 장소가 확인된 행사입니다. 예정·미공개 상태는 확정 정보와 구분합니다.</p></div></section><section className="experience-width explorer-page"><SiteExplorer siteSlug={site.slug} records={snapshot.records} /></section></ExperienceShell>;
+  }
   return (
     <ExperienceShell site={site} active="items">
       <section className={`experience-index experience-index--${experience.frame} experience-width`}>
@@ -159,6 +199,9 @@ export async function SiteCategoryView({ site, category }: { site: SiteConfig; c
   const snapshot = await getPublicRecords(site);
   const records = snapshot.records.filter((record) => record.category === category);
   const experience = getExperience(site.slug);
+  if (site.slug === "events") {
+    return <ExperienceShell site={site} active="items"><section className="events-category-head experience-width"><p>EVENT TYPE</p><h1>{category}</h1><div><b>{records.length}건</b><span>기간·장소·입장 조건이 확인된 {category} 기록입니다.</span></div></section><section className="experience-width explorer-page"><SiteExplorer siteSlug={site.slug} records={records} /></section></ExperienceShell>;
+  }
   return (
     <ExperienceShell site={site} active="items">
       <section className={`experience-category experience-category--${experience.frame} experience-width`}>
@@ -201,7 +244,7 @@ function DetailLabels({ site, record }: { site: SiteConfig; record: PublishedRec
 function DetailChecklist({ record, checks }: { record: PublishedRecord; checks?: string[] }) {
   const visibleChecks = (checks?.length ? checks : Object.values(record.details).slice(0, 4)).filter(Boolean);
   if (!visibleChecks.length) return null;
-  return <section className="article-checklist"><p>이 글에서 확인할 항목</p><h2>{record.title} 체크 순서</h2><ol>{visibleChecks.map((check, index) => <li key={check}><span>{String(index + 1).padStart(2, "0")}</span>{check}</li>)}</ol></section>;
+  return <section className="article-checklist"><p>이 글에서 확인할 항목</p><h2>방문 전 확인 순서</h2><ol>{visibleChecks.map((check, index) => <li key={check}><span>{String(index + 1).padStart(2, "0")}</span>{check}</li>)}</ol></section>;
 }
 
 export async function SiteItemDetailView({ site, slug }: { site: SiteConfig; slug: string }) {
@@ -210,10 +253,46 @@ export async function SiteItemDetailView({ site, slug }: { site: SiteConfig; slu
   const editorialItem = getItem(site, slug);
   const related = (await getPublicRecords(site)).records.filter((candidate) => candidate.slug !== slug && candidate.category === record.category).slice(0, 3);
   const guides = getEditorialGuides(site).slice(0, 3);
-  const isEvent = site.slug === "events";
+  const event = site.slug === "events" ? editorialItem?.eventSchema : undefined;
+  const structuredData = event ? {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    name: record.title,
+    description: record.summary,
+    startDate: event.startDate,
+    endDate: event.endDate,
+    eventStatus: event.eventStatus ?? "https://schema.org/EventScheduled",
+    eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+    location: {
+      "@type": "Place",
+      name: event.locationName,
+      address: { "@type": "PostalAddress", streetAddress: event.locationAddress, addressCountry: "KR" }
+    },
+    organizer: { "@type": "Organization", name: event.organizerName },
+    offers: event.ticketUrl && event.price !== undefined ? {
+      "@type": "Offer",
+      url: event.ticketUrl,
+      price: event.price,
+      priceCurrency: event.priceCurrency ?? "KRW",
+      availability: event.availability ?? "https://schema.org/InStock"
+    } : undefined,
+    image: [publicUrl(site, "/opengraph-image")],
+    url: publicUrl(site, `/items/${record.slug}`),
+    dateModified: record.updatedAt
+  } : {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: record.title,
+    description: record.summary,
+    dateModified: record.updatedAt,
+    mainEntityOfPage: publicUrl(site, `/items/${record.slug}`),
+    author: { "@type": "Person", name: publicOperator.name },
+    publisher: { "@type": "Organization", name: publicOperator.organization },
+    image: [publicUrl(site, "/opengraph-image")]
+  };
   return (
     <ExperienceShell site={site} active="items">
-      <StructuredData data={{ "@context": "https://schema.org", "@type": isEvent ? "Event" : "Article", name: record.title, headline: record.title, description: record.summary, dateModified: record.updatedAt, url: publicUrl(site, `/items/${record.slug}`), organizer: { "@type": "Organization", name: site.name }, location: isEvent ? { "@type": "Place", name: record.region } : undefined }} />
+      <StructuredData data={structuredData} />
       <article className={`experience-article experience-article--${site.slug} experience-width`}>
         <header className="article-header"><div className="article-labels"><span>{record.category}</span><span>{record.region}</span><span>{record.status === "published" ? "원문 확인 기록" : "편집 글"}</span></div><h1>{record.title}</h1><p>{record.summary}</p><div className="article-byline"><span>작성·검토 {getExperience(site.slug).deskName}</span><span>마지막 검토 {toDisplayDate(record.lastCheckedAt)}</span></div></header>
         <div className="article-grid"><div className="article-main"><DetailLabels site={site} record={record} /><DetailChecklist record={record} checks={editorialItem?.keyChecks} />{editorialItem ? <section className="article-editorial"><p>편집 해설</p><RichContent blocks={editorialItem.body} />{editorialItem.faq.length ? <section className="article-faq"><h2>관련 질문</h2>{editorialItem.faq.map((faq) => <div key={faq.question}><h3>{faq.question}</h3><p>{faq.answer}</p></div>)}</section> : null}</section> : <section className="article-context"><p>공식 기록</p><h2>기록된 정보</h2><p>{record.summary}</p></section>}<ArticleSources record={record} links={editorialItem?.sourceLinks} /><section className="article-related"><p>같이 읽을 자료</p><div>{related.map((item) => <Link key={item.id} href={`/items/${item.slug}`}>{item.title}<ArrowRight size={15} /></Link>)}{guides.map((guide) => <Link key={guide.slug} href={`/guides/${guide.slug}`}>{guide.title}<ArrowRight size={15} /></Link>)}</div></section></div><aside className="article-aside"><div className="article-source-card"><ShieldCheck size={21} /><b>확인 기준</b><p>원문 링크, 작성일, 개별 체크 항목을 함께 남깁니다.</p></div><div className="article-review-card"><p>편집 책임</p><b>{getExperience(site.slug).deskName}</b><span>운영자 {publicOperator.name} · {publicOperator.organization}</span></div></aside></div>
@@ -234,7 +313,8 @@ function headingsFor(guide: Guide) {
 
 export function SiteGuideDetailView({ site, guide }: { site: SiteConfig; guide: Guide }) {
   const headings = headingsFor(guide);
-  return <ExperienceShell site={site} active="guides"><StructuredData data={{ "@context": "https://schema.org", "@type": "Article", headline: guide.title, description: guide.summary, dateModified: guide.updatedAt, author: { "@type": "Person", name: publicOperator.name }, publisher: { "@type": "Organization", name: publicOperator.organization } }} /><article className="guide-article experience-width"><header><p>{guide.category}</p><h1>{guide.title}</h1><span>{guide.summary}</span><div>작성·검토 {getExperience(site.slug).deskName} · 마지막 검토 {toDisplayDate(guide.updatedAt)}</div></header><div className="guide-article-grid"><aside className="guide-toc"><b>이 글의 순서</b>{headings.map((heading) => <span key={heading}>{heading}</span>)}<Link href="/sources">출처 정책 보기</Link></aside><div className="guide-content"><RichContent blocks={guide.body} /><section className="guide-author"><FileCheck2 size={20} /><div><h3>작성자 검토 메모</h3><b>{publicOperator.name} · {publicOperator.organization}</b><p>공식 원문과 실제 이용 순서를 대조해, 독자가 마지막으로 확인해야 할 항목을 편집합니다.</p></div></section></div></div></article></ExperienceShell>;
+  const canonical = publicUrl(site, `/guides/${guide.slug}`);
+  return <ExperienceShell site={site} active="guides"><StructuredData data={{ "@context": "https://schema.org", "@type": "Article", headline: guide.title, description: guide.summary, datePublished: guide.updatedAt, dateModified: guide.updatedAt, mainEntityOfPage: canonical, image: [publicUrl(site, "/opengraph-image")], author: { "@type": "Person", name: publicOperator.name }, publisher: { "@type": "Organization", name: publicOperator.organization, url: publicUrl(site) } }} /><article className="guide-article experience-width"><header><p>{guide.category}</p><h1>{guide.title}</h1><span>{guide.summary}</span><div>작성·검토 {getExperience(site.slug).deskName} · 마지막 검토 {toDisplayDate(guide.updatedAt)}</div></header><div className="guide-article-grid"><aside className="guide-toc"><b>이 글의 순서</b>{headings.map((heading) => <span key={heading}>{heading}</span>)}<Link href="/sources">출처 정책 보기</Link></aside><div className="guide-content"><RichContent blocks={guide.body} /><section className="guide-author"><FileCheck2 size={20} /><div><h3>작성자 검토 메모</h3><b>{publicOperator.name} · {publicOperator.organization}</b><p>공식 원문과 실제 이용 순서를 대조해, 독자가 마지막으로 확인해야 할 항목을 편집합니다.</p></div></section></div></div></article></ExperienceShell>;
 }
 
 function DocumentBody({ site, document }: { site: SiteConfig; document: OperationalDocument }) {

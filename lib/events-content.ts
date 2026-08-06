@@ -1,863 +1,931 @@
 import type { Guide, InfoItem, SiteConfig } from "@/lib/sites";
 
-export const eventsReviewDate = "2026-08-03";
-export const eventsNextReviewDate = "공식 공지 변경 시";
-
-type EventLink = {
-  label: string;
-  url: string;
+type EventInput = Omit<InfoItem, "faq" | "tags" | "details"> & {
+  tags?: string[];
+  details: Record<string, string>;
+  faq?: InfoItem["faq"];
 };
 
-type EventMeta = {
-  eventDateStatus: string;
-  venue: string;
-  bookingType: string;
-  priceNote: string;
-  weatherRisk: string;
-  trafficNote: string;
-  familyFit: string;
-  lastCheckedAt: string;
-  officialLinks: EventLink[];
-  statusBadges: string[];
-  bestFor: string;
-  editorNote: string;
-  avoidNote: string;
-  sourceCheck: string;
-  eventSchema?: {
-    startDate: string;
-    endDate?: string;
-    locationName: string;
-  };
-};
-
-type EventSeed = {
-  slug: string;
-  title: string;
-  summary: string;
-  category: string;
-  region: string;
-  source: string;
-  sourceUrl: string;
-  tags: string[];
-  meta: Omit<EventMeta, "lastCheckedAt" | "officialLinks"> & {
-    officialLinks?: EventLink[];
-  };
-};
-
-type EventGuideSeed = {
-  slug: string;
-  title: string;
-  summary: string;
-  category: string;
-  focus: string;
-  checklist: string[];
-};
-
-const categoryDefaults: Record<string, Partial<EventMeta>> = {
-  "축제": {
-    bookingType: "행사별 사전예매와 현장 관람 조건 분리 확인",
-    priceNote: "입장료와 체험비가 분리될 수 있어 프로그램표 확인 필요",
-    weatherRisk: "야외 프로그램은 우천, 강풍, 폭염 공지 확인",
-    trafficNote: "행사 종료 직후 대중교통과 임시 통제 구간 확인",
-    familyFit: "동행자 연령과 체류 시간을 먼저 정한 뒤 방문 추천",
-    statusBadges: ["우천확인", "교통통제", "현장혼잡"],
-    bestFor: "야외 일정과 지역 이동을 함께 계획하는 방문자",
-    avoidNote: "마지막 공연 직후 바로 귀가해야 한다면 혼잡도가 높을 수 있습니다."
-  },
-  "전시": {
-    bookingType: "사전등록, 현장권, 마지막 입장 시간 확인",
-    priceNote: "무료 전시라도 특별전, 굿즈, 주차비는 별도일 수 있음",
-    weatherRisk: "실내 행사지만 이동 동선과 대기 줄은 날씨 영향 가능",
-    trafficNote: "전시장 주차장 만차와 주변 대체 주차장 확인",
-    familyFit: "아이 동반 시 체험 회차와 휴식 공간 확인",
-    statusBadges: ["사전등록", "실내", "입장마감"],
-    bestFor: "전시 관람 시간을 안정적으로 확보하려는 방문자",
-    avoidNote: "입장 마감 직전에 도착하면 주요 부스 관람 시간이 부족할 수 있습니다."
-  },
-  "체험": {
-    bookingType: "회차별 예약, 현장 선착순, 연령 제한 확인",
-    priceNote: "재료비와 보호자 동반 비용이 따로 붙을 수 있음",
-    weatherRisk: "야외 체험은 우천 시 실내 대체 여부 확인",
-    trafficNote: "체험 시작 30분 전 도착 가능한 이동 시간 확보",
-    familyFit: "초등 저학년 이하 동반은 대기 공간과 화장실 위치 확인",
-    statusBadges: ["회차예약", "연령확인", "가족방문"],
-    bestFor: "아이와 함께 짧은 회차형 프로그램을 찾는 방문자",
-    avoidNote: "현장 선착순만 믿고 늦게 도착하면 체험 재료가 소진될 수 있습니다."
-  },
-  "가족 나들이": {
-    bookingType: "입장권, 체험권, 동반자 기준 확인",
-    priceNote: "입장권 외 식사, 관람차, 체험비를 따로 계산",
-    weatherRisk: "폭염, 우천, 미세먼지 때 실내 대안 확인",
-    trafficNote: "주차장에서 행사장까지 도보 거리와 유모차 이동 확인",
-    familyFit: "유아, 초등, 부모 동반 여부에 따라 추천 동선 분리",
-    statusBadges: ["가족방문", "편의시설", "대체동선"],
-    bestFor: "아이 또는 부모님과 반나절 코스를 짜는 방문자",
-    avoidNote: "휴식 공간이 적은 행사는 장시간 체류보다 짧은 방문이 현실적입니다."
-  },
-  "무료 행사": {
-    bookingType: "무료입장 여부와 사전 예약 필요 여부 확인",
-    priceNote: "입장 무료와 체험 무료는 다를 수 있어 비용 범위 분리",
-    weatherRisk: "야외 무료 공연은 우천 취소 공지 확인",
-    trafficNote: "무료 행사는 입장 집중 시간이 빨라 대중교통 우선 검토",
-    familyFit: "비용 부담은 낮지만 대기와 화장실 위치 확인 필요",
-    statusBadges: ["무료입장", "예약확인", "혼잡주의"],
-    bestFor: "입장료 부담 없이 짧게 둘러볼 행사를 찾는 방문자",
-    avoidNote: "무료라는 이유만으로 늦게 출발하면 입장 대기와 자리 부족이 생길 수 있습니다."
-  }
-};
-
-const slugMeta: Record<string, Partial<EventMeta>> = {
-  "seoul-book-fair-visit": {
-    venue: "서울 주요 전시장",
-    eventDateStatus: "연례 도서전 공식 공지에서 회차별 일정 확인",
-    bookingType: "사전등록, 현장권, 강연 프로그램 예약을 분리 확인",
-    editorNote: "책 구매보다 강연과 부스 동선을 먼저 정해야 만족도가 높습니다.",
-    sourceCheck: "공식 홈페이지의 관람 안내와 프로그램표를 함께 확인하세요."
-  },
-  "busan-fireworks-guide": {
-    venue: "부산 광안리 일대",
-    eventDateStatus: "하반기 공식 일정과 교통 통제 공지 확인",
-    bookingType: "일반 관람 구역과 유료 좌석 공지 분리 확인",
-    editorNote: "관람 위치보다 귀가 동선이 더 중요하게 작동하는 대형 야간 행사입니다.",
-    sourceCheck: "부산문화관광축제조직위원회와 부산시 교통 공지를 함께 확인하세요."
-  },
-  "seoul-design-festival": {
-    venue: "서울 전시장",
-    eventDateStatus: "공식 전시 일정과 사전등록 기간 확인",
-    editorNote: "브랜드 부스와 강연 프로그램을 먼저 고르면 현장 체류 시간을 줄일 수 있습니다.",
-    sourceCheck: "공식 홈페이지의 티켓 안내, 입장 마감, 참가 브랜드 공지를 대조하세요."
-  },
-  "bexco-exhibition": {
-    venue: "부산 BEXCO",
-    eventDateStatus: "BEXCO 행사 캘린더에서 전시장 홀과 개최일 확인",
-    trafficNote: "전시장 홀 위치와 주변 주차장 만차 가능성을 함께 확인",
-    editorNote: "같은 벡스코 행사라도 홀 위치에 따라 이동 시간과 주차장이 달라집니다.",
-    sourceCheck: "BEXCO 공식 일정표와 개별 전시 공식 페이지를 함께 확인하세요."
-  },
-  "suncheon-garden": {
-    venue: "순천만국가정원",
-    eventDateStatus: "정원 운영 시간과 시즌 행사 공지 확인",
-    familyFit: "가족 나들이는 관람차, 휴식 공간, 식사 동선을 먼저 확인",
-    editorNote: "반나절 이상 머무르는 공간이라 입장권보다 체력 배분이 더 중요합니다.",
-    sourceCheck: "순천만국가정원 공식 운영 안내와 행사 공지를 확인하세요."
-  },
-  "goyang-flower": {
-    venue: "고양 꽃전시관 및 일산호수공원 일대",
-    eventDateStatus: "공식 꽃박람회 개최 기간과 사전예매 공지 확인",
-    editorNote: "꽃 전시는 낮 시간 사진 수요가 몰려 오전 입장이 비교적 안정적입니다.",
-    sourceCheck: "공식 홈페이지에서 입장권, 프로그램, 주차 안내를 함께 보세요."
-  }
-};
-
-function sourceLinks(seed: EventSeed | InfoItem): EventLink[] {
-  const links = [
-    { label: seed.source, url: seed.sourceUrl },
-    { label: "대한민국 구석구석", url: "https://korean.visitkorea.or.kr/" },
-    { label: "문화포털", url: "https://www.culture.go.kr/" }
-  ];
-  return links.filter((link, index, list) => list.findIndex((item) => item.url === link.url) === index);
-}
-
-function createEventItem(seed: EventSeed): InfoItem {
+function verifiedEvent(input: EventInput): InfoItem {
   return {
-    slug: seed.slug,
-    title: seed.title,
-    summary: seed.summary,
-    category: seed.category,
-    region: seed.region,
-    period: seed.meta.eventDateStatus,
-    source: seed.source,
-    sourceUrl: seed.sourceUrl,
-    updatedAt: eventsReviewDate,
-    tags: seed.tags,
-    details: {
-      "장소": seed.meta.venue,
-      "예매": seed.meta.bookingType,
-      "비용": seed.meta.priceNote,
-      "방문 주의": seed.meta.avoidNote
-    },
-    body: [],
-    faq: [],
-    ...seed.meta,
-    lastCheckedAt: eventsReviewDate,
-    officialLinks: seed.meta.officialLinks ?? sourceLinks(seed)
+    ...input,
+    tags: input.tags ?? [],
+    faq: input.faq ?? []
   };
 }
 
 export const extraEventItems: InfoItem[] = [
-  createEventItem({
-    slug: "gwanghwamun-square-weekend",
-    title: "광화문광장 주말 무료 행사 확인",
-    summary: "광화문광장 주말 프로그램을 무료입장, 현장 혼잡, 우천 변경 기준으로 정리했습니다.",
+  verifiedEvent({
+    slug: "seoul-summer-beach-2026",
+    title: "2026 서울썸머비치 방문 전 확인할 회차와 준비물",
+    summary: "8월 9일까지 광화문광장과 세종로공원에서 운영되는 무료 물놀이 행사입니다. 회차별 입장, 복장, 현장접수 조건을 공식 안내와 함께 정리했습니다.",
     category: "무료 행사",
-    region: "서울",
-    source: "광화문광장",
-    sourceUrl: "https://gwanghwamun.seoul.go.kr/",
-    tags: ["광화문", "무료", "주말"],
-    meta: {
-      eventDateStatus: "광장 공식 프로그램 공지에서 주말 일정 확인",
-      venue: "서울 광화문광장",
-      bookingType: "대부분 자유 관람이나 일부 체험은 사전 신청 가능",
-      priceNote: "입장 무료, 체험 부스와 주변 소비는 별도",
-      weatherRisk: "우천, 폭염, 집회·교통 통제 공지 확인",
-      trafficNote: "광화문역, 경복궁역, 시청역 분산 이동 권장",
-      familyFit: "유모차 이동은 가능하지만 행사 밀집 시간은 피하는 편이 좋음",
-      statusBadges: ["무료입장", "도심행사", "교통확인"],
-      bestFor: "서울 도심에서 짧게 들를 무료 행사를 찾는 방문자",
-      editorNote: "도심 광장은 행사보다 현장 통제와 인파 변화가 더 빨리 바뀝니다.",
-      avoidNote: "집회나 교통 통제가 겹치는 날은 같은 행사라도 체감 혼잡이 크게 올라갑니다.",
-      sourceCheck: "광화문광장 공지와 서울시 교통 안내를 함께 확인하세요."
-    }
+    region: "서울 종로구",
+    period: "2026.07.20~08.09 · 13:00~21:00",
+    source: "서울특별시 펀서울",
+    sourceUrl: "https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=359",
+    updatedAt: "2026-08-06T13:12:00+09:00",
+    lastCheckedAt: "2026-08-06T13:12:00+09:00",
+    nextReviewAt: "2026-08-07T10:00:00+09:00",
+    readingTime: "8분",
+    audience: "도심 물놀이를 준비하는 가족과 현장접수 가능 여부가 궁금한 방문자",
+    tags: ["서울", "광화문", "물놀이", "무료", "아이동반", "진행중"],
+    statusBadges: ["진행 중", "무료입장", "회차제"],
+    eventDateStatus: "2026년 8월 9일까지 운영",
+    venue: "광화문광장·세종로공원",
+    bookingType: "워터웨이브존은 회차제, 샌드아지트는 사전등록 30명과 현장접수 20명",
+    priceNote: "입장 무료, 푸드트럭과 개인 물품 구매 비용은 별도",
+    weatherRisk: "폭염·호우·시설 점검 시 회차 운영 변경 가능",
+    trafficNote: "광화문역 7번 출구 또는 경복궁역 6번 출구 이용 권장",
+    familyFit: "영유아는 보호자 동반이 필요하고 수영복·수영모·아쿠아슈즈를 준비해야 함",
+    bestFor: "짧은 이동으로 도심 물놀이를 하려는 가족",
+    details: {
+      "운영 시간": "13:00~21:00, 세부 존별 회차 상이",
+      "이용 요금": "무료",
+      "입장 방식": "회차별 입장팔찌, 일부 사전예약·현장접수",
+      "필수 준비": "수영복, 수영모 또는 캡모자, 아쿠아슈즈",
+      "정확한 장소": "서울 종로구 세종대로 172 광화문광장 일대"
+    },
+    keyChecks: ["원하는 회차의 현장접수 여부", "수영복·수영모·아쿠아슈즈", "폭염 또는 우천 운영 공지", "마지막 회차 연령 제한"],
+    officialLinks: [
+      { label: "서울특별시 행사 상세", url: "https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=359" },
+      { label: "광화문광장 교통·시설 안내", url: "https://gwanghwamun.seoul.go.kr/" }
+    ],
+    sourceLinks: [
+      { label: "서울특별시 행사 상세", url: "https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=359" },
+      { label: "광화문광장 안내", url: "https://gwanghwamun.seoul.go.kr/" }
+    ],
+    eventSchema: {
+      startDate: "2026-07-20T13:00:00+09:00",
+      endDate: "2026-08-09T21:00:00+09:00",
+      locationName: "광화문광장·세종로공원",
+      locationAddress: "서울특별시 종로구 세종대로 172",
+      organizerName: "서울특별시",
+      eventStatus: "https://schema.org/EventScheduled",
+      price: 0,
+      priceCurrency: "KRW",
+      availability: "https://schema.org/InStock",
+      ticketUrl: "https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=359"
+    },
+    body: [
+      "## 지금 갈 수 있는 행사인가",
+      "서울특별시 펀서울 상세 페이지에서 2026년 7월 20일부터 8월 9일까지, 광화문광장과 세종로공원에서 운영되는 일정으로 확인했다. 공식 페이지의 대표 시간은 13시부터 21시까지지만, 물놀이 구역과 모래 휴식 구역은 서로 다른 회차표를 사용한다. 단순히 운영 시간 안에 도착한다고 바로 입장할 수 있는 구조가 아니다.",
+      "워터웨이브존은 회차마다 다른 색의 입장팔찌를 사용하고, 샌드아지트는 한 회차에 사전등록 30명과 현장접수 20명을 받는 방식으로 안내돼 있다. 사전예약자가 입장 시작 후 10분을 넘기면 노쇼 좌석이 현장접수로 전환될 수 있지만, 잔여석이 생긴다는 보장은 없다.",
+      "## 물놀이 구역에서 실제로 필요한 것",
+      "공식 이용수칙에는 수영복과 수영모 착용, 아쿠아슈즈 준비가 명시돼 있다. 캡모자는 허용되지만 면 티셔츠와 청바지는 물놀이 복장으로 인정되지 않는다. 대형 튜브, 오리발, 스노클, 킥판도 사용할 수 없다. 준비물을 빠뜨리면 무료 행사장에 도착하고도 물놀이 구역을 이용하지 못할 수 있다.",
+      "영유아와 어린이는 보호자 없이 입장할 수 없다. 어린이 단체는 4명당 보호자 1명이 필요하다고 안내돼 있어, 여러 가족이 함께 움직인다면 어른 인원도 먼저 계산해야 한다. 반려동물은 물놀이 구역과 샌드아지트에 출입할 수 없다.",
+      "## 회차를 고르는 기준",
+      "낮 회차는 햇볕과 지면 온도가 가장 큰 변수다. 17시대 정비 이후 회차는 기온 부담이 줄지만 퇴근 시간대 광화문 교통과 겹친다. 금·토 마지막 워터웨이브 회차는 성인 전용 프로그램으로 운영된다는 공식 안내가 있으므로, 아이와 방문할 때는 마지막 회차를 선택하면 안 된다.",
+      "샌드아지트는 50분 단위로 운영되고 모래 구역은 맨발 이용이 원칙이다. 입장 전에 몸의 물기를 제거해야 하므로 물놀이 직후 바로 이동하려면 정리 시간을 포함해야 한다. 물놀이와 모래 구역을 연달아 예약할 때는 최소 한 회차 간격을 두는 편이 현실적이다.",
+      "## 비용과 현장 편의",
+      "행사 입장과 주요 물놀이 시설은 무료로 안내돼 있다. 다만 플레이마켓의 푸드트럭, 개인 물품 구매, 광화문 주변 주차 비용은 별도다. 음식물과 음료는 워터웨이브존과 샌드아지트 안으로 반입할 수 없으므로 식사 시간을 회차 사이에 배치해야 한다.",
+      "보관함 수량이 제한돼 있어 구성원 단위로 짐을 합쳐 보관하라는 안내가 있다. 열쇠를 잃어버리면 제작 비용 1만원을 부담해야 한다. 귀중품을 최소화하고 방수 가방 하나에 가족 물품을 모으면 현장 이동이 수월하다.",
+      "## 출발 당일 확인할 순서",
+      "- 서울특별시 행사 상세에서 운영 중단이나 시간 변경 공지를 확인한다.\n- 원하는 구역의 회차와 사전예약·현장접수 비율을 다시 본다.\n- 수영복, 수영모, 아쿠아슈즈와 마른 옷을 챙긴다.\n- 영유아 보호자 수와 반려동물 출입 제한을 확인한다.\n- 광화문역과 경복궁역 중 귀가 방향에 맞는 역을 정한다.",
+      "공식 페이지는 시간 변동 가능성을 별도로 적고 있다. 폭염이나 호우 예보가 있다면 행사 개최 여부만 보지 말고 개별 회차가 정상 운영되는지까지 확인해야 한다. 이 글은 2026년 8월 6일 공식 행사 상세와 광화문광장 안내를 대조했다."
+    ],
+    faq: [
+      { question: "예약하지 않으면 이용할 수 없나요?", answer: "구역과 회차에 따라 현장접수가 있지만 정원이 정해져 있습니다. 샌드아지트는 사전등록 30명과 현장접수 20명으로 안내돼 있으므로 현장접수만 믿고 늦게 도착하는 것은 위험합니다." },
+      { question: "아이에게 래시가드만 입혀도 되나요?", answer: "공식 안내는 수영복 재질 의상과 수영모 또는 캡모자, 아쿠아슈즈를 요구합니다. 면 티셔츠와 청바지는 허용되지 않는다고 적혀 있습니다." }
+    ]
   }),
-  createEventItem({
-    slug: "hangang-park-free-program",
-    title: "한강공원 무료 프로그램 방문 전 체크",
-    summary: "한강공원 무료 공연과 체험을 날씨, 돗자리 가능 여부, 귀가 동선 기준으로 정리했습니다.",
-    category: "무료 행사",
-    region: "서울",
-    source: "서울시 한강사업본부",
-    sourceUrl: "https://hangang.seoul.go.kr/",
-    tags: ["한강", "무료공연", "야외"],
-    meta: {
-      eventDateStatus: "공원별 프로그램 공지에서 운영일 확인",
-      venue: "서울 한강공원 일대",
-      bookingType: "자유 관람 중심, 일부 프로그램은 사전 접수 가능",
-      priceNote: "입장 무료이나 주차, 매점, 대여 비용은 별도",
-      weatherRisk: "우천, 강풍, 폭염 때 프로그램 취소 가능",
-      trafficNote: "행사 종료 후 지하철역까지 도보 시간을 넉넉히 계산",
-      familyFit: "아이 동반은 화장실, 그늘, 물품 보관 위치를 먼저 확인",
-      statusBadges: ["무료입장", "우천확인", "야외"],
-      bestFor: "저녁 산책과 짧은 야외 공연을 함께 보고 싶은 방문자",
-      editorNote: "한강 행사는 이동 거리가 길어 가장 가까운 역만 보고 출발하면 피곤해지기 쉽습니다.",
-      avoidNote: "폭염 특보나 강풍 예보가 있는 날은 실내 대안을 먼저 정하세요.",
-      sourceCheck: "한강공원 공식 공지에서 공원명, 장소, 취소 기준을 확인하세요."
-    }
-  }),
-  createEventItem({
-    slug: "seoul-culture-portal-free-weekend",
-    title: "서울문화포털 무료 주말 행사 찾기",
-    summary: "서울문화포털에서 무료 전시와 공연을 고를 때 확인해야 할 예약, 연령, 장소 기준입니다.",
-    category: "무료 행사",
-    region: "서울",
-    source: "서울문화포털",
-    sourceUrl: "https://culture.seoul.go.kr/",
-    tags: ["서울", "무료전시", "문화포털"],
-    meta: {
-      eventDateStatus: "서울문화포털 행사 목록에서 회차별 일정 확인",
-      venue: "서울시 공공문화공간",
-      bookingType: "행사별 예약, 선착순, 자유 관람 여부 확인",
-      priceNote: "무료 표기라도 일부 체험 재료비가 있을 수 있음",
-      weatherRisk: "실내외 장소에 따라 우천 영향 분리 확인",
-      trafficNote: "자치구별 장소가 흩어져 있어 지도 위치 확인 필요",
-      familyFit: "연령 제한과 보호자 동반 여부를 먼저 확인",
-      statusBadges: ["무료입장", "예약확인", "실내대안"],
-      bestFor: "주말 비용 부담을 줄이면서 문화공간을 찾는 방문자",
-      editorNote: "포털 목록은 시작점이고, 최종 조건은 각 운영기관 페이지에서 다시 봐야 합니다.",
-      avoidNote: "무료 키워드만 보고 선택하면 예약 마감 행사에 걸릴 수 있습니다.",
-      sourceCheck: "서울문화포털 목록과 개별 기관 공지를 함께 확인하세요."
-    }
-  }),
-  createEventItem({
-    slug: "busan-weekend-free-culture",
-    title: "부산 주말 무료 문화행사 확인",
-    summary: "부산 지역 무료 문화행사를 해변, 공원, 공연장별 이동 기준으로 정리했습니다.",
-    category: "무료 행사",
-    region: "부산",
-    source: "비짓부산",
-    sourceUrl: "https://www.visitbusan.net/",
-    tags: ["부산", "무료", "주말"],
-    meta: {
-      eventDateStatus: "비짓부산과 행사 공식 공지에서 운영일 확인",
-      venue: "부산 주요 관광·문화 공간",
-      bookingType: "자유 관람과 사전 신청 프로그램 분리 확인",
-      priceNote: "입장 무료 행사도 교통비, 주차비, 체험비는 별도",
-      weatherRisk: "해변·야외 공연은 바람과 우천 공지 확인",
-      trafficNote: "해운대, 광안리, 원도심은 귀가 시간 혼잡 확인",
-      familyFit: "해변 행사는 아이 동반 시 귀가와 식사 동선을 먼저 정리",
-      statusBadges: ["무료입장", "해변동선", "귀가확인"],
-      bestFor: "부산 여행 중 비용 부담을 줄일 짧은 일정을 찾는 방문자",
-      editorNote: "부산은 같은 무료 행사라도 해변과 원도심의 이동 피로도가 다릅니다.",
-      avoidNote: "막차 시간이 빠듯한 야간 무료 공연은 마지막까지 보기 어렵습니다.",
-      sourceCheck: "비짓부산 행사 안내와 주최 측 공지를 함께 확인하세요."
-    }
-  }),
-  createEventItem({
-    slug: "daejeon-free-science-weekend",
-    title: "대전 과학 무료 체험 주말 코스",
-    summary: "대전 과학 관련 무료 체험을 회차, 연령, 실내 대안 기준으로 정리했습니다.",
-    category: "무료 행사",
-    region: "대전",
-    source: "대전광역시 관광",
-    sourceUrl: "https://www.daejeon.go.kr/tou/",
-    tags: ["대전", "과학", "무료체험"],
-    meta: {
-      eventDateStatus: "대전 관광·기관 공지에서 프로그램 회차 확인",
-      venue: "대전 과학문화 공간",
-      bookingType: "회차별 선착순 또는 사전 접수 여부 확인",
-      priceNote: "입장 무료라도 특별 체험 재료비 확인",
-      weatherRisk: "실내 체험은 안정적이나 이동 구간 우천 확인",
-      trafficNote: "기관 간 거리가 있어 한나절에 1~2곳만 추천",
-      familyFit: "초등 동반은 체험 난이도와 소요 시간을 먼저 확인",
-      statusBadges: ["무료체험", "연령확인", "회차예약"],
-      bestFor: "아이와 교육형 주말 일정을 찾는 가족",
-      editorNote: "과학 체험은 무료보다 회차 정원이 더 빨리 마감되는지 봐야 합니다.",
-      avoidNote: "예약 없이 여러 체험을 이어 붙이면 대기 시간이 길어질 수 있습니다.",
-      sourceCheck: "대전 관광 안내와 각 과학기관 공지를 함께 확인하세요."
-    }
-  }),
-  createEventItem({
-    slug: "suwon-free-museum-day",
-    title: "수원 무료 전시·박물관 방문 노트",
-    summary: "수원 지역 무료 전시와 박물관 방문을 휴관일, 주차, 주변 동선 기준으로 정리했습니다.",
-    category: "무료 행사",
-    region: "경기",
-    source: "수원문화재단",
-    sourceUrl: "https://www.swcf.or.kr/",
-    tags: ["수원", "무료전시", "박물관"],
-    meta: {
-      eventDateStatus: "수원문화재단과 시설별 공지에서 운영일 확인",
-      venue: "수원 문화시설 및 전시공간",
-      bookingType: "자유 관람, 해설 예약, 체험 접수 구분",
-      priceNote: "상설 무료와 특별 유료 프로그램 분리 확인",
-      weatherRisk: "실내 중심이나 화성 일대 이동은 우천 영향 가능",
-      trafficNote: "행궁동 혼잡 시간과 공영주차장 만차 가능성 확인",
-      familyFit: "역사·전시 코스는 초등 이상 동반에 비교적 적합",
-      statusBadges: ["무료전시", "휴관확인", "주차주의"],
-      bestFor: "비용 부담 없이 반나절 역사·전시 코스를 찾는 방문자",
-      editorNote: "수원은 행사장보다 주변 보행 동선과 주차 대안이 만족도를 좌우합니다.",
-      avoidNote: "주말 오후 행궁동 혼잡 시간에는 차량 이동이 비효율적일 수 있습니다.",
-      sourceCheck: "수원문화재단 안내와 개별 시설 공지를 확인하세요."
-    }
-  }),
-  createEventItem({
-    slug: "sejong-lake-park-free-event",
-    title: "세종호수공원 무료 행사 체크",
-    summary: "세종호수공원 무료 행사를 돗자리, 주차, 야간 귀가 기준으로 정리했습니다.",
-    category: "무료 행사",
-    region: "세종",
-    source: "세종특별자치시 관광",
-    sourceUrl: "https://www.sejong.go.kr/tour.do",
-    tags: ["세종", "호수공원", "무료"],
-    meta: {
-      eventDateStatus: "세종시 관광·문화 공지에서 행사일 확인",
-      venue: "세종호수공원 일대",
-      bookingType: "자유 관람 중심, 일부 체험은 사전 신청 가능",
-      priceNote: "입장 무료이나 주차와 주변 소비는 별도",
-      weatherRisk: "호수공원 야외 행사는 바람과 우천 공지 확인",
-      trafficNote: "공원 주차장 위치와 행사장까지 도보 거리 확인",
-      familyFit: "가족 방문은 화장실, 그늘, 휴식 구역을 먼저 확인",
-      statusBadges: ["무료입장", "공원행사", "우천확인"],
-      bestFor: "공원 산책과 무료 공연을 함께 보고 싶은 가족",
-      editorNote: "넓은 공원 행사는 행사장 위치를 정확히 찍고 출발해야 걷는 시간을 줄입니다.",
-      avoidNote: "돗자리 가능 여부를 모르면 현장 체류가 불편할 수 있습니다.",
-      sourceCheck: "세종시 공식 관광·문화 공지에서 장소 세부 위치를 확인하세요."
-    }
-  }),
-  createEventItem({
-    slug: "gangneung-beach-free-busking",
-    title: "강릉 해변 무료 공연 방문 전 확인",
-    summary: "강릉 해변 무료 공연을 날씨, 주차, 숙박 동선 기준으로 점검합니다.",
-    category: "무료 행사",
-    region: "강원",
-    source: "강릉시 문화관광",
-    sourceUrl: "https://www.gn.go.kr/tour/",
-    tags: ["강릉", "해변", "무료공연"],
-    meta: {
-      eventDateStatus: "강릉시 관광 공지와 행사별 안내에서 운영일 확인",
-      venue: "강릉 해변 및 관광지 일대",
-      bookingType: "자유 관람 중심, 특정 공연은 좌석 제한 확인",
-      priceNote: "공연 관람은 무료일 수 있으나 주차·숙박·식사 비용 별도",
-      weatherRisk: "해변 공연은 강풍, 우천, 파도 영향 확인",
-      trafficNote: "해변 주차장 만차와 숙소까지 귀가 동선 확인",
-      familyFit: "아이 동반은 바람, 모래, 야간 체류 시간을 고려",
-      statusBadges: ["무료공연", "해변행사", "강풍확인"],
-      bestFor: "강릉 여행 중 저녁 무료 공연을 곁들이려는 방문자",
-      editorNote: "해변 공연은 분위기는 좋지만 날씨 영향을 가장 직접적으로 받습니다.",
-      avoidNote: "숙소가 멀다면 공연 종료 후 택시 대기 시간이 길어질 수 있습니다.",
-      sourceCheck: "강릉시 문화관광 공지와 주최 측 안내를 함께 보세요."
-    }
-  }),
-  createEventItem({
-    slug: "jeju-local-market-festival",
-    title: "제주 지역 장터형 행사 방문 기준",
-    summary: "제주 장터형 행사를 렌터카 이동, 우천, 현장 결제 기준으로 정리했습니다.",
+  verifiedEvent({
+    slug: "busan-sea-festival-2026",
+    title: "제30회 부산바다축제 7일 일정과 다대포 이동 계획",
+    summary: "8월 7일부터 13일까지 다대포해수욕장에서 열리는 부산바다축제입니다. 불꽃쇼, 포차, 해변 프로그램별 운영 조건과 귀가 동선을 구분했습니다.",
     category: "축제",
-    region: "제주",
-    source: "비짓제주",
-    sourceUrl: "https://www.visitjeju.net/",
-    tags: ["제주", "장터", "여행"],
-    meta: {
-      eventDateStatus: "비짓제주 행사 안내에서 지역별 운영일 확인",
-      venue: "제주 지역 행사장",
-      bookingType: "자유 방문 중심, 일부 체험 사전 접수 가능",
-      priceNote: "입장 무료라도 체험, 식음료, 주차 비용 별도",
-      weatherRisk: "제주 날씨와 바람에 따른 운영 변경 확인",
-      trafficNote: "렌터카 주차장과 대중교통 막차 시간 확인",
-      familyFit: "가족 여행은 화장실, 그늘, 이동 시간을 먼저 확인",
-      statusBadges: ["지역축제", "현장결제", "날씨확인"],
-      bestFor: "제주 여행 중 짧은 지역 행사를 끼워 넣는 방문자",
-      editorNote: "제주는 같은 거리라도 날씨와 주차 상황에 따라 체감 이동 시간이 달라집니다.",
-      avoidNote: "비행기 시간 직전에 장터형 행사를 넣으면 이동 변수가 큽니다.",
-      sourceCheck: "비짓제주 행사 안내와 주최 측 SNS 공지를 함께 확인하세요."
-    }
+    region: "부산 사하구",
+    period: "2026.08.07~08.13 · 다대포해수욕장",
+    source: "부산축제조직위원회",
+    sourceUrl: "https://www.bfo.or.kr/bbs/content.php?co_id=sea_overview",
+    updatedAt: "2026-08-06T13:27:00+09:00",
+    lastCheckedAt: "2026-08-06T13:27:00+09:00",
+    nextReviewAt: "2026-08-07T09:30:00+09:00",
+    readingTime: "9분",
+    audience: "다대포 불꽃쇼와 야간 프로그램 뒤 대중교통 귀가를 준비하는 방문자",
+    tags: ["부산", "다대포", "불꽃쇼", "해변", "야간", "우천확인"],
+    statusBadges: ["8월 7일 시작", "야외행사", "교통확인"],
+    eventDateStatus: "2026년 8월 7일부터 13일까지 7일간",
+    venue: "부산 다대포해수욕장 일원",
+    bookingType: "프로그램별 자유관람·사전예매 혼합, 티켓 메뉴에서 개별 확인",
+    priceNote: "해변 축제 입장은 무료 중심, 유료 좌석·체험·식음은 프로그램별 별도",
+    weatherRisk: "강풍·호우 시 불꽃쇼와 해변 프로그램 변경 가능",
+    trafficNote: "도시철도 1호선 다대포해수욕장역 중심, 종료 직후 역사 혼잡 예상",
+    familyFit: "낮 체험은 가족 방문 가능, 야간 포차와 비치클럽은 프로그램 성격 확인 필요",
+    details: {
+      "행사 기간": "2026.08.07~08.13, 7일간",
+      "행사장": "다대포해수욕장 일원",
+      "주최·주관": "부산광역시·부산축제조직위원회",
+      "공식 문의": "051-713-5000",
+      "주소": "부산 사하구 몰운대1길 14 일대"
+    },
+    keyChecks: ["날짜별 프로그램과 불꽃쇼 시각", "티켓이 필요한 프로그램", "강풍·호우 변경 공지", "도시철도 막차와 역사 통제"],
+    sourceLinks: [
+      { label: "2026 부산바다축제 개요", url: "https://www.bfo.or.kr/bbs/content.php?co_id=sea_overview" },
+      { label: "행사 일정표", url: "https://www.bfo.or.kr/bbs/board.php?bo_table=sea_program" }
+    ],
+    officialLinks: [
+      { label: "축제 개요", url: "https://www.bfo.or.kr/bbs/content.php?co_id=sea_overview" },
+      { label: "교통통제 안내", url: "https://www.bfo.or.kr/bbs/content.php?co_id=sea_traffic" }
+    ],
+    eventSchema: {
+      startDate: "2026-08-07T10:00:00+09:00",
+      endDate: "2026-08-13T22:00:00+09:00",
+      locationName: "다대포해수욕장",
+      locationAddress: "부산광역시 사하구 몰운대1길 14",
+      organizerName: "부산광역시",
+      eventStatus: "https://schema.org/EventScheduled",
+      price: 0,
+      priceCurrency: "KRW",
+      availability: "https://schema.org/InStock",
+      ticketUrl: "https://www.bfo.or.kr/bbs/content.php?co_id=sea_ticket"
+    },
+    body: [
+      "## 올해 일정부터 바로잡기",
+      "부산축제조직위원회가 운영하는 축제 개요에는 제30회 부산바다축제가 2026년 8월 7일부터 13일까지 7일간 다대포해수욕장 일원에서 열린다고 적혀 있다. 일부 행사 목록에는 8월 9일까지로 짧게 표시된 페이지가 남아 있어, 이번 글은 축제 전용 누리집의 개요와 최신 공고에 적힌 7일 일정을 기준으로 삼았다.",
+      "행사장은 한 지점이 아니라 다대포해수욕장 일원이다. 불꽃쇼, 포차, 공연무대, 비치클럽의 위치와 운영 시간이 다르므로 '다대포 도착'만으로 동선이 끝나지 않는다. 보고 싶은 프로그램 두 개를 먼저 고른 뒤 행사장 지도에서 거리를 확인해야 한다.",
+      "## 프로그램 성격이 서로 다르다",
+      "공식 사이트는 다대불꽃쇼, 다대포차와 청춘포차, 포차 스테이지, 선셋비치클럽, 청춘해방구역을 별도 메뉴로 나눈다. 불꽃쇼만 보는 방문자와 비치클럽에 참여하는 방문자의 준비물과 입장 방식은 같지 않다. 특히 티켓예매 메뉴가 따로 있는 프로그램은 무료 축제라는 인상만으로 입장 가능하다고 판단하면 안 된다.",
+      "포차와 푸드 구역은 좌석·주문 대기가 생길 수 있고, 불꽃쇼 전후에는 해변 이동이 집중된다. 식사를 불꽃쇼 직전으로 잡으면 주문 대기와 관람 자리 확보가 겹친다. 먼저 관람 위치를 정하고 식사는 한 시간 이상 앞당기는 편이 낫다.",
+      "## 다대포까지 가는 시간보다 돌아오는 시간이 중요하다",
+      "도시철도 1호선 다대포해수욕장역을 이용하면 행사장에 접근하기 쉽지만, 대형 야간 프로그램 종료 직후에는 승강장 진입과 열차 탑승에 시간이 걸릴 수 있다. 부산역이나 서면에서 환승해야 하는 방문자는 마지막 프로그램 종료 시각과 막차를 동시에 계산해야 한다.",
+      "차량 방문은 해수욕장 인근 주차장 한 곳만 목표로 잡지 않는 편이 좋다. 축제 기간에는 통제 구간과 만차 상황이 달라질 수 있다. 공식 교통통제 안내에 지정된 임시 주차·대중교통 정보를 확인하고, 차량을 멀리 세운다면 야간 보행 거리도 함께 계산한다.",
+      "## 바닷가 행사에서 날씨를 읽는 법",
+      "다대포는 비가 오지 않아도 강풍이 불면 불꽃과 무대 장비 운영이 영향을 받을 수 있다. 날씨 앱의 강수 확률만 보지 말고 축제 공지사항에서 프로그램 단위 변경을 확인해야 한다. 전체 축제가 유지되더라도 불꽃쇼나 체험 일부만 취소될 수 있다.",
+      "낮 프로그램은 모래 지면의 열기와 그늘 부족도 변수다. 물, 모자, 자외선 차단제와 보조 배터리를 준비하고, 아이나 고령자가 동행한다면 냉방 가능한 실내 대기 장소를 미리 정한다. 해가 진 뒤에는 바닷바람 때문에 젖은 옷이 빠르게 차가워질 수 있어 얇은 겉옷도 유용하다.",
+      "## 방문 전날의 실제 체크리스트",
+      "- 축제 전용 사이트에서 방문 날짜의 프로그램 시간표를 연다.\n- 티켓 메뉴에서 예매가 필요한 프로그램과 매진 상태를 확인한다.\n- 교통통제 페이지와 부산 도시철도 막차를 함께 본다.\n- 불꽃쇼·야외무대의 강풍 및 우천 변경 공지를 확인한다.\n- 일행이 흩어질 경우 다시 만날 지점을 역 출구 단위로 정한다.",
+      "부산바다축제는 여러 프로그램을 한꺼번에 소비하는 것보다 목표를 줄일수록 만족도가 높아지는 행사다. 이 글은 2026년 8월 6일 축제 개요, 프로그램 메뉴, 교통통제 메뉴와 부산축제조직위원회 공고를 대조해 작성했다."
+    ],
+    faq: [
+      { question: "축제는 8월 9일까지인가요, 13일까지인가요?", answer: "부산바다축제 전용 누리집의 2026 축제 개요와 최신 공고에는 8월 7일부터 13일까지 7일간으로 적혀 있습니다. 개별 목록의 짧은 기간보다 전용 누리집 최신 공지를 우선했습니다." },
+      { question: "모든 프로그램이 무료인가요?", answer: "축제 공간은 무료 중심이지만 티켓예매 메뉴가 별도로 운영되는 프로그램과 식음·체험 비용이 있을 수 있습니다. 방문 날짜별 프로그램 페이지에서 확인해야 합니다." }
+    ]
   }),
-  createEventItem({
-    slug: "cheongju-culture-market",
-    title: "청주 문화마켓 주말 방문 노트",
-    summary: "청주 문화마켓형 행사를 작가 부스, 체험비, 주차 기준으로 정리했습니다.",
-    category: "체험",
-    region: "충북",
-    source: "청주시 문화관광",
-    sourceUrl: "https://www.cheongju.go.kr/tour/index.do",
-    tags: ["청주", "마켓", "체험"],
-    meta: {
-      eventDateStatus: "청주시 문화관광 공지에서 행사일 확인",
-      venue: "청주 문화공간 및 마켓 행사장",
-      bookingType: "자유 관람과 체험 예약 분리 확인",
-      priceNote: "관람은 무료라도 체험비와 굿즈 구매 비용 별도",
-      weatherRisk: "실외 마켓은 우천 시 부스 운영 변경 가능",
-      trafficNote: "행사장 주변 공영주차장과 도보 이동 확인",
-      familyFit: "아이와 함께라면 체험 소요 시간과 대기 줄 확인",
-      statusBadges: ["체험", "마켓", "주차확인"],
-      bestFor: "작가 부스와 짧은 체험을 함께 보는 방문자",
-      editorNote: "마켓형 행사는 부스별 운영 시간이 달라 관심 부스를 먼저 정하는 편이 좋습니다.",
-      avoidNote: "현장 결제 수단이 제한될 수 있어 카드와 간편결제를 함께 준비하세요.",
-      sourceCheck: "청주시 문화관광 공지와 행사 주최 안내를 함께 확인하세요."
-    }
+  verifiedEvent({
+    slug: "seoul-garden-show-2026",
+    title: "2026 서울국제정원박람회 서울숲 관람 동선",
+    summary: "10월 27일까지 서울숲 곳곳에 분산된 150여 개 정원을 보는 장기 행사입니다. 출입구, 관람 범위, 더위와 이동 거리를 중심으로 정리했습니다.",
+    category: "체험·가족",
+    region: "서울 성동구",
+    period: "2026.05.01~10.27 · 서울숲",
+    source: "서울특별시 펀서울",
+    sourceUrl: "https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=431",
+    updatedAt: "2026-08-06T13:41:00+09:00",
+    lastCheckedAt: "2026-08-06T13:41:00+09:00",
+    nextReviewAt: "2026-08-13T10:00:00+09:00",
+    readingTime: "7분",
+    audience: "서울숲에서 정원 전시를 가족과 천천히 보려는 방문자",
+    tags: ["서울숲", "정원", "무료", "가족", "야외전시", "진행중"],
+    statusBadges: ["진행 중", "자유관람", "장기행사"],
+    eventDateStatus: "2026년 10월 27일까지",
+    venue: "서울숲 은행나무숲·윈터숲 등",
+    bookingType: "상설 정원 자유관람, 일부 이벤트 현장 참여",
+    priceNote: "상설 정원 관람 무료, 마켓 구매와 일부 프로그램은 별도",
+    weatherRisk: "야외 분산형 행사로 폭염·호우 시 체류 부담 큼",
+    trafficNote: "서울숲역 3·4·5번 출구 도보 2분, 뚝섬역 도보 약 11분",
+    familyFit: "유모차 이동 가능하지만 넓은 구역을 한 번에 돌기보다 구간 선택 권장",
+    details: { "행사 기간": "2026.05.01~10.27", "관람 방식": "서울숲 내 자유관람", "주요 규모": "기업·기관 정원과 마켓 등 150여 개 정원 콘텐츠", "가까운 역": "수인분당선 서울숲역", "주소": "서울 성동구 뚝섬로 273" },
+    keyChecks: ["보고 싶은 정원 구역", "폭염·우천 시 휴식 장소", "서울숲 출입구", "현장 이벤트 운영 시간"],
+    sourceLinks: [{ label: "서울특별시 행사 상세", url: "https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=431" }],
+    officialLinks: [{ label: "서울특별시 행사 상세", url: "https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=431" }],
+    eventSchema: { startDate: "2026-05-01", endDate: "2026-10-27", locationName: "서울숲", locationAddress: "서울특별시 성동구 뚝섬로 273", organizerName: "서울특별시", eventStatus: "https://schema.org/EventScheduled", price: 0, priceCurrency: "KRW", availability: "https://schema.org/InStock", ticketUrl: "https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=431" },
+    body: [
+      "## 서울숲 전체를 한 전시장으로 보면 힘들다",
+      "2026 서울국제정원박람회는 5월 1일부터 10월 27일까지 서울숲에서 이어지는 장기 행사다. 공식 안내는 은행나무숲과 윈터숲 등 여러 구역에 기업·기관 정원, 정원마켓, 가든퍼니처 전시를 분산 배치했다고 설명한다. 입구에서 한 방향으로 따라가면 끝나는 실내 전시가 아니다.",
+      "처음 방문한다면 정원 수보다 체류 시간을 먼저 정하는 편이 좋다. 한 시간 일정은 서울숲역과 가까운 핵심 구역, 두세 시간 일정은 마켓과 팝업정원까지 묶는 방식이 현실적이다. 150여 개 콘텐츠를 전부 보겠다는 계획은 여름철 보행 부담을 크게 만든다.",
+      "## 출입구를 귀가 방향에 맞춘다",
+      "공식 교통 안내는 서울숲역 3·4·5번 출구에서 서울숲까지 도보 약 2분, 뚝섬역 7·8번 출구에서는 약 11분으로 안내한다. 같은 서울숲이라도 어느 정원을 볼지에 따라 가까운 출입구가 달라진다. 약속 장소를 '서울숲 입구'라고만 정하지 말고 역과 출구 번호를 함께 적어야 한다.",
+      "한강버스 서울숲 선착장 운항 정보도 공식 페이지에 소개돼 있지만, 운항 시간과 기상 영향을 별도로 확인해야 한다. 이동 경험을 위해 선택할 수는 있어도 정해진 프로그램 시각이 있다면 지하철보다 변수가 많다.",
+      "## 가족 방문은 화장실과 그늘을 먼저 표시한다",
+      "정원 콘텐츠는 아이가 직접 걷고 보는 장점이 있지만, 서울숲은 구역 간 거리가 짧지 않다. 유모차를 이용한다면 계단보다 완만한 길을 선택하고, 식사와 화장실 위치를 이동 전에 확인한다. 아이가 좋아할 캐릭터 팝업정원만 골라 짧게 보는 것도 충분한 관람 방식이다.",
+      "한여름 낮에는 작품보다 그늘과 수분 보충이 중요하다. 오전이나 해질 무렵을 선택하고, 폭염특보가 있으면 체류 시간을 줄인다. 비가 온 뒤에는 흙길과 잔디 구역이 미끄러울 수 있어 흰 운동화나 바퀴가 작은 유모차는 불편할 수 있다.",
+      "## 무료 관람과 소비 구역을 구분한다",
+      "상설 정원은 누구나 자유롭게 관람할 수 있다고 안내돼 있다. 그러나 정원마켓의 제품 구매, 식음, 일부 현장 프로그램은 무료 관람과 다른 지출이다. 아이와 방문할 때는 체험 참여 여부와 예산을 미리 정하면 현장에서 계속 결정을 바꾸지 않아도 된다.",
+      "## 추천하는 90분 동선",
+      "- 서울숲역에서 가까운 출입구로 들어간다.\n- 공식 지도에서 팝업정원 두 곳과 휴식 지점 하나를 고른다.\n- 중간에 마켓 또는 가든퍼니처 전시 한 곳만 추가한다.\n- 돌아갈 역과 가까운 출구 방향으로 이동을 끝낸다.",
+      "공식 일정은 10월 27일까지지만 계절과 식물 상태, 현장 이벤트는 달라진다. 이 글은 2026년 8월 6일 서울특별시 행사 상세의 기간, 장소, 교통 안내와 참여 방식을 확인했다."
+    ]
   }),
-  createEventItem({
-    slug: "daegu-street-concert",
-    title: "대구 거리공연 행사 체크",
-    summary: "대구 거리공연을 공연 시간, 우천 변경, 귀가 동선 중심으로 정리했습니다.",
+  verifiedEvent({
+    slug: "k-ballet-world-2026",
+    title: "2026 K-Ballet World 공연별 날짜와 예매 구분",
+    summary: "8월 25일부터 10월 1일까지 세 공연장에서 이어지는 서울국제발레축제입니다. 하나의 장기 전시가 아니라 공연별 날짜·장소·가격을 따로 예매해야 합니다.",
+    category: "전시·예술",
+    region: "서울 종로·마포·광진",
+    period: "2026.08.25~10.01 · 공연별 일정",
+    source: "서울특별시 펀서울",
+    sourceUrl: "https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=753",
+    updatedAt: "2026-08-06T13:56:00+09:00",
+    lastCheckedAt: "2026-08-06T13:56:00+09:00",
+    nextReviewAt: "2026-08-20T10:00:00+09:00",
+    readingTime: "7분",
+    audience: "공연별 출연진과 극장을 비교해 발레 공연을 예매하려는 관객",
+    tags: ["발레", "공연", "대학로", "예매", "만7세이상"],
+    statusBadges: ["사전예매", "공연별 유료", "만 7세 이상"],
+    eventDateStatus: "2026년 8월 25일부터 10월 1일까지",
+    venue: "아르코예술극장·서울아트센터 도암홀·나루아트센터",
+    bookingType: "공연별 예매, 아르코예술극장 등 각 공연장 판매처 확인",
+    priceNote: "공연별 상이",
+    weatherRisk: "실내 공연이나 폭우 시 교통 지연과 입장 마감 주의",
+    trafficNote: "공연장 세 곳이 서로 달라 예매권의 극장명을 반드시 확인",
+    familyFit: "만 7세 이상 관람 가능, 공연별 러닝타임과 좌석 정책 확인",
+    details: { "공연 기간": "2026.08.25~10.01", "관람 연령": "만 7세 이상", "가격": "공연별 상이", "공연장": "아르코예술극장·도암홀·나루아트센터", "문의": "02-538-0505" },
+    keyChecks: ["공연명과 날짜", "예매권에 적힌 공연장", "만 7세 이상 관람 기준", "공연별 가격·취소 마감"],
+    sourceLinks: [
+      { label: "서울특별시 축제 상세", url: "https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=753" },
+      { label: "아르코예술극장 예약", url: "https://theater.arko.or.kr/" }
+    ],
+    officialLinks: [{ label: "서울특별시 축제 상세", url: "https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=753" }],
+    eventSchema: { startDate: "2026-08-25", endDate: "2026-10-01", locationName: "아르코예술극장 외 2곳", locationAddress: "서울특별시 종로구 대학로8길 7 외", organizerName: "한국발레협회", eventStatus: "https://schema.org/EventScheduled", priceCurrency: "KRW", availability: "https://schema.org/InStock", ticketUrl: "https://theater.arko.or.kr/" },
+    body: [
+      "## 축제 기간만 보고 예매하면 안 되는 이유",
+      "K-Ballet World는 8월 25일부터 10월 1일까지 매일 같은 공연을 올리는 행사가 아니다. 공식 포스터에는 K-발레월드스타가 8월 25~26일 아르코예술극장 대극장, K-발레레퍼토리가 8월 28일과 30일 같은 극장, 청소년 발레페스티벌이 9월 19일 서울아트센터 도암홀, 창작신인안무가전이 10월 1일 나루아트센터에서 열린다고 구분돼 있다.",
+      "따라서 먼저 공연 이름과 출연진을 고르고, 그 공연의 날짜와 극장을 확인해야 한다. 축제 대표 기간만 캘린더에 저장하면 예매한 극장과 다른 장소로 이동할 수 있다.",
+      "## 공연장 세 곳을 혼동하지 않는 방법",
+      "아르코예술극장은 혜화역과 가깝고, 도암홀과 나루아트센터는 이동 방향이 다르다. 예매 직후 캘린더 제목에 공연명뿐 아니라 극장명을 함께 적는다. 지도 앱 즐겨찾기도 공연장 공식 명칭으로 저장해야 비슷한 이름의 건물과 혼동하지 않는다.",
+      "공연 시작 시각은 작품별 예매 화면에서 다시 확인해야 한다. 로비에서 티켓을 수령하거나 신분 확인이 필요한 경우가 있으므로 처음 가는 극장이라면 시작 30분 전 도착을 기준으로 잡는다.",
+      "## 연령과 좌석 규정을 먼저 본다",
+      "서울특별시 행사 상세에는 관람 대상이 만 7세 이상으로 적혀 있다. 초등학생과 함께라면 나이만 확인하지 말고 공연장별 증빙 요구와 보호자 동반 규정을 예매처에서 확인한다. 공연 중 입장이 제한되면 늦게 도착한 관객은 지정된 시간까지 기다려야 할 수 있다.",
+      "가격은 '공연별 상이'로 공지돼 있다. 축제 전체의 단일 티켓이 아니라 작품과 좌석등급별 가격을 비교해야 한다. 할인권을 선택할 때는 현장에서 증빙할 수 있는지, 취소 수수료가 언제부터 발생하는지도 같이 본다.",
+      "## 작품을 고르는 기준",
+      "클래식 발레의 익숙한 장면을 기대한다면 월드스타 프로그램의 레퍼토리와 출연진을 먼저 확인한다. 여러 단체의 짧은 작품을 비교하고 싶다면 K-발레레퍼토리가 더 맞을 수 있다. 청소년 프로그램과 창작신인안무가전은 축제의 성격이 다르므로 단순히 날짜가 편하다는 이유만으로 고르지 않는 편이 좋다.",
+      "## 예매 전에 남길 메모",
+      "- 공연명과 출연진을 공식 프로그램에서 확인한다.\n- 날짜·시작 시각·극장명을 한 줄에 저장한다.\n- 좌석등급, 할인 증빙, 취소 마감일을 캡처한다.\n- 만 7세 이상 관람 기준과 지연 입장 규정을 확인한다.\n- 예매처 고객센터가 아니라 공연장 교통 페이지도 함께 본다.",
+      "이 글은 2026년 8월 6일 서울특별시 행사 상세에 게시된 공식 포스터, 공연장 목록, 관람 연령과 아르코예술극장 예약 연결을 확인했다. 아직 '공연별 상이'로 남은 가격은 숫자를 추정하지 않았다."
+    ]
+  }),
+  verifiedEvent({
+    slug: "seoul-sculpture-festival-2026",
+    title: "제3회 서울조각페스티벌 두 행사장 관람법",
+    summary: "8월 29일부터 9월 4일까지 열린송현녹지광장과 뚝섬한강공원에서 열립니다. 전시는 11월까지 이어지지만 집중 프로그램 기간은 별도로 봐야 합니다.",
+    category: "전시·예술",
+    region: "서울 종로·광진",
+    period: "2026.08.29~09.04 · 전시 일부 11.30까지",
+    source: "서울특별시 펀서울",
+    sourceUrl: "https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=393",
+    updatedAt: "2026-08-06T14:11:00+09:00",
+    lastCheckedAt: "2026-08-06T14:11:00+09:00",
+    nextReviewAt: "2026-08-27T10:00:00+09:00",
+    readingTime: "7분",
+    audience: "무료 야외 조각 전시와 주말 프로그램을 구분해 보고 싶은 방문자",
+    tags: ["조각", "무료", "열린송현", "뚝섬", "야외전시"],
+    statusBadges: ["무료", "두 행사장", "야외전시"],
+    eventDateStatus: "집중 축제 8월 29일~9월 4일, 일부 전시 11월 30일까지",
+    venue: "열린송현녹지광장·뚝섬한강공원",
+    bookingType: "야외 전시 자유관람, 체험 프로그램별 현장 안내 확인",
+    priceNote: "무료",
+    weatherRisk: "야외 전시와 공연은 호우·폭염 영향",
+    trafficNote: "두 행사장은 서로 멀어 하루 한 곳 중심 관람 권장",
+    familyFit: "조각놀이터와 체험은 가족 방문 적합, 프로그램 시간 확인 필요",
+    details: { "집중 기간": "2026.08.29~09.04", "전시 기간": "일부 2026.11.30까지", "행사장": "열린송현녹지광장·뚝섬한강공원", "요금": "무료", "문의": "02-550-2561" },
+    keyChecks: ["집중 프로그램일과 상설 전시일", "방문할 행사장", "평일·주말 프로그램 시간", "우천 공지"],
+    sourceLinks: [{ label: "서울특별시 축제 상세", url: "https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=393" }],
+    officialLinks: [{ label: "서울특별시 축제 상세", url: "https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=393" }],
+    eventSchema: { startDate: "2026-08-29T16:00:00+09:00", endDate: "2026-09-04T21:00:00+09:00", locationName: "열린송현녹지광장·뚝섬한강공원", locationAddress: "서울특별시 종로구 송현동 48-9 외", organizerName: "서울특별시", eventStatus: "https://schema.org/EventScheduled", price: 0, priceCurrency: "KRW", availability: "https://schema.org/InStock", ticketUrl: "https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=393" },
+    body: [
+      "## 날짜가 두 종류다",
+      "공식 상세는 제3회 서울조각페스티벌의 집중 기간을 8월 29일부터 9월 4일까지로 안내한다. 동시에 야외 조각 전시는 11월 30일까지 이어지는 구간이 있다. 개막 프로그램, 버스킹, 조각놀이터를 보려면 집중 기간을 선택해야 하고, 작품만 조용히 보려면 이후 상설 전시 기간도 가능하다.",
+      "평일 프로그램은 17시부터 21시, 토·일 프로그램은 16시부터 21시로 안내돼 있다. 낮에 도착해 작품을 볼 수 있더라도 공연이나 체험을 기대한다면 프로그램 시간에 맞춰야 한다.",
+      "## 열린송현과 뚝섬은 한 동선이 아니다",
+      "열린송현녹지광장은 안국역에서 접근하기 쉽고, 뚝섬한강공원은 강변 야외 공간이다. 두 곳을 같은 오후 일정에 넣으면 이동 시간이 관람 시간을 잠식한다. 공식 프로그램표에서 보고 싶은 작품이나 프로그램의 행사장을 확인한 뒤 한 곳을 중심으로 잡는 편이 낫다.",
+      "열린송현은 도심 다른 전시 공간과 묶기 좋고, 뚝섬은 한강 산책과 연결하기 좋다. 아이와 조각놀이터를 이용하려면 단순 작품 위치가 아니라 체험 운영 장소와 시간을 확인해야 한다.",
+      "## 야외 작품을 보는 데 필요한 준비",
+      "무료 야외 전시는 예약 부담이 적지만 그늘, 앉을 곳, 화장실이 실내 미술관만큼 일정하지 않다. 8월 말 낮 시간에는 자외선과 지면 열기가 강하고, 해가 진 뒤에는 작품 조명이 관람 경험을 바꾼다. 사진 촬영이 목적이라면 일몰 전후 시간을 선택할 만하다.",
+      "비가 오면 작품 자체는 남아 있어도 버스킹과 시민 참여 프로그램이 변경될 수 있다. 우산을 들고 작품 사이를 이동하는 동선도 좁아질 수 있으므로 강한 비 예보가 있으면 프로그램 공지를 확인하고 날짜를 바꾼다.",
+      "## 2시간 관람 계획",
+      "- 공식 프로그램표에서 열린송현 또는 뚝섬 중 한 곳을 선택한다.\n- 프로그램 시작 30분 전에 도착해 주요 작품 위치를 확인한다.\n- 조각놀이터·버스킹 중 하나를 우선 일정으로 잡는다.\n- 귀가 역과 가까운 구역에서 관람을 끝낸다.",
+      "## 집중 기간이 지난 뒤 방문한다면",
+      "9월 4일 이후에는 집중 프로그램과 같은 운영을 기대하면 안 된다. 남아 있는 야외 작품의 위치와 공개 기간을 행사 공식 채널에서 다시 찾고, 조각놀이터나 버스킹이 계속된다고 추정하지 않는다. 작품 감상이 목적이면 햇빛 방향과 일몰 시각을 기준으로 방문 시간을 고르고, 프로그램 참여가 목적이면 집중 기간 안의 세부 시간표를 선택해야 한다.",
+      "두 행사장에 장기간 남는 작품이 같지 않을 수 있으므로 11월 30일까지라는 대표 전시 종료일만 저장하지 않는다. 방문할 장소, 보고 싶은 작품, 그 작품의 공개 기간을 한 줄에 함께 적어야 헛걸음을 줄일 수 있다.",
+      "공식 페이지는 무료 요금과 행사장, 프로그램 시간을 명확히 공개하고 있다. 이 글은 2026년 8월 6일 해당 상세 페이지를 확인했으며, 작품별 배치와 우천 변경은 행사 직전 공식 안내를 우선한다."
+    ]
+  }),
+  verifiedEvent({
+    slug: "seoul-art-week-2026",
+    title: "2026 서울아트위크 135개 공간 중 동선 고르는 법",
+    summary: "8월 31일부터 9월 6일까지 서울 전역 135개 시각예술 공간이 참여합니다. 전부 순회하는 행사가 아니라 권역과 예약 프로그램을 골라야 합니다.",
+    category: "전시·예술",
+    region: "서울 전역",
+    period: "2026.08.31~09.06 · 135개 공간",
+    source: "서울특별시 펀서울",
+    sourceUrl: "https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=392",
+    updatedAt: "2026-08-06T14:26:00+09:00",
+    lastCheckedAt: "2026-08-06T14:26:00+09:00",
+    nextReviewAt: "2026-08-28T10:00:00+09:00",
+    readingTime: "8분",
+    audience: "갤러리 나이트와 미술관 프로그램을 권역별로 골라 보고 싶은 관람객",
+    tags: ["서울아트위크", "미술", "무료", "갤러리", "예약"],
+    statusBadges: ["무료", "다중 장소", "일부 예약"],
+    eventDateStatus: "2026년 8월 31일부터 9월 6일까지",
+    venue: "뉴스뮤지엄·서울시립미술관·서울공예박물관·코엑스 등 135개소",
+    bookingType: "공간별 자유관람과 사전신청 프로그램 혼합",
+    priceNote: "공식 대표 프로그램 무료, 참여 기관별 유료 전시 여부는 개별 확인",
+    weatherRisk: "실내 중심이나 권역 간 도보 이동 시 날씨 영향",
+    trafficNote: "을지로·한남·삼청·청담 등 한 권역을 묶는 방식 권장",
+    familyFit: "프로그램별 대상이 달라 가족 워크숍 여부를 별도 확인",
+    details: { "행사 기간": "2026.08.31~09.06", "참여 규모": "시각예술 공간 135개소", "대표 장소": "뉴스뮤지엄·서울시립미술관·서울공예박물관·코엑스", "요금": "공식 페이지 무료 표기", "문의": "02-2133-4232" },
+    keyChecks: ["방문 권역", "공간별 휴관일·운영시간", "워크숍 사전신청", "마지막 입장"],
+    sourceLinks: [
+      { label: "서울특별시 축제 상세", url: "https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=392" },
+      { label: "서울아트위크 공식 사이트", url: "https://seoulartweek.co.kr/" }
+    ],
+    officialLinks: [{ label: "서울아트위크 공식 사이트", url: "https://seoulartweek.co.kr/" }],
+    eventSchema: { startDate: "2026-08-31T14:00:00+09:00", endDate: "2026-09-06T22:00:00+09:00", locationName: "서울 전역 시각예술공간 135개소", locationAddress: "서울특별시 일원", organizerName: "서울특별시", eventStatus: "https://schema.org/EventScheduled", price: 0, priceCurrency: "KRW", availability: "https://schema.org/InStock", ticketUrl: "https://seoulartweek.co.kr/" },
+    body: [
+      "## 135개를 보는 행사가 아니라 하나의 권역을 고르는 행사",
+      "2026 서울아트위크는 8월 31일부터 9월 6일까지 뉴스뮤지엄, 서울시립미술관, 서울공예박물관, 코엑스 등 135개 시각예술 공간이 참여한다. 공식 페이지의 '무료' 표기는 대표 행사 기준으로 읽어야 하며, 참여 기관의 상설 전시나 아트페어 입장료까지 모두 무료라는 뜻으로 확대하면 안 된다.",
+      "하루 일정은 을지로, 한남, 삼청, 청담처럼 권역 하나를 고른 뒤 세 곳 안팎으로 줄이는 것이 현실적이다. 여러 권역의 유명 공간만 이어 붙이면 이동 시간이 길고 각 공간의 마지막 입장을 놓치기 쉽다.",
+      "## 오프닝 나이트를 중심으로 짤 때",
+      "8월 31일 뉴스뮤지엄 을지로에서는 워크숍, 아티스트 토크, 퍼포먼스가 시간대별로 이어진다. 공식 상세에 적힌 대표 프로그램은 14시 워크숍, 17시 토크, 19시 이후 오프닝 나이트와 퍼포먼스다. 각 프로그램의 참여 정원과 신청 방식은 별도 공지를 확인해야 한다.",
+      "워크숍은 한남·삼청·청담·을지로 권역에서 서로 다른 날짜와 대상으로 운영된다. 가족 대상, 시각장애인 우선, 성인 대상처럼 참여 조건이 다르므로 제목만 보고 신청하면 안 된다.",
+      "## 기관별 시간이 다르다는 뜻",
+      "공식 대표 시간은 '기관별 상이'다. 미술관은 휴관일과 마지막 입장이 있고, 갤러리는 저녁 연장 운영을 하더라도 평소보다 일찍 문을 닫을 수 있다. 방문 목록을 만들 때 각 기관 공식 페이지에서 날짜별 운영 시간을 한 번 더 확인한다.",
+      "코엑스처럼 유료 아트페어가 포함될 수 있는 공간과 무료 공공미술관 프로그램을 같은 비용 범주로 보지 않는다. 예산을 정할 때 입장권, 사전예약, 이동 비용을 권역별로 나눈다.",
+      "## 권역별 일정표를 만드는 방법",
+      "- 가장 보고 싶은 프로그램 하나를 고정한다.\n- 그 장소에서 도보 20분 안에 있는 공간 두 곳을 추가한다.\n- 각 공간의 마지막 입장과 휴관일을 적는다.\n- 예약 프로그램과 자유관람을 색으로 구분한다.\n- 저녁 프로그램 뒤 이용할 지하철역을 미리 정한다.",
+      "## 무료 표기를 공간별로 다시 확인한다",
+      "행사 대표 프로그램이 무료여도 참여 기관의 모든 전시와 아트페어가 무료인 것은 아니다. 일정표에 공간을 넣을 때 입장료, 사전예약, 현장 대기, 마지막 입장을 각각 표시한다. 코엑스의 유료 행사와 공공미술관의 무료 프로그램을 같은 비용 칸에 넣으면 당일 예산과 입장 준비가 어긋난다.",
+      "예약이 필요한 워크숍은 신청 완료 화면을 저장하고, 자유관람 공간은 휴관과 임시 연장 운영을 전날 다시 확인한다. 권역을 정한 뒤에도 비용과 예약 방식이 다른 공간을 구분해야 실제로 이동 가능한 일정표가 된다.",
+      "서울아트위크는 선택지가 많다는 점이 장점이지만, 모든 정보를 얕게 나열하면 오히려 도움이 되지 않는다. 이 글은 2026년 8월 6일 서울특별시 행사 상세와 서울아트위크 공식 사이트 연결을 확인했다."
+    ]
+  }),
+  verifiedEvent({
+    slug: "yeongdeungpo-beer-festival-2026",
+    title: "2026 영등포 원조맥주축제 예정 일정과 대중교통",
+    summary: "9월 18~19일 영등포공원에서 15시부터 22시까지 열릴 예정입니다. 현재 확정된 내용과 아직 공개되지 않은 가격·세부 프로그램을 구분했습니다.",
     category: "축제",
-    region: "대구",
-    source: "대구문화예술진흥원",
-    sourceUrl: "https://dgfc.or.kr/",
-    tags: ["대구", "거리공연", "야간"],
-    meta: {
-      eventDateStatus: "대구문화예술진흥원과 주최 공지에서 회차 확인",
-      venue: "대구 도심 공연 공간",
-      bookingType: "자유 관람 중심, 일부 좌석제 공연 확인",
-      priceNote: "관람 무료라도 주변 주차와 식음료 비용 별도",
-      weatherRisk: "우천, 폭염, 강풍 때 공연 장소 변경 가능",
-      trafficNote: "동성로·중앙로 일대 보행 혼잡과 막차 확인",
-      familyFit: "야간 공연은 아이 동반 시 귀가 시간을 먼저 정리",
-      statusBadges: ["거리공연", "우천확인", "야간"],
-      bestFor: "저녁 시간대 가볍게 공연을 보고 싶은 방문자",
-      editorNote: "거리공연은 시작 시간보다 실제 관람 가능한 자리 확보가 중요합니다.",
-      avoidNote: "소음이나 긴 대기가 부담스럽다면 실내 공연을 대안으로 두세요.",
-      sourceCheck: "대구문화예술진흥원과 주최 측 공지를 함께 확인하세요."
-    }
+    region: "서울 영등포구",
+    period: "예정 2026.09.18~09.19 · 15:00~22:00",
+    source: "서울특별시 펀서울",
+    sourceUrl: "https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=589",
+    updatedAt: "2026-08-06T14:42:00+09:00",
+    lastCheckedAt: "2026-08-06T14:42:00+09:00",
+    nextReviewAt: "2026-09-11T10:00:00+09:00",
+    readingTime: "6분",
+    audience: "수제맥주와 공연을 보려는 성인 방문자와 귀가 계획이 필요한 일행",
+    tags: ["영등포", "수제맥주", "푸드트럭", "야간", "예정"],
+    statusBadges: ["예정", "15시~22시", "가격 미공개"],
+    eventDateStatus: "2026년 9월 18~19일 예정",
+    venue: "영등포공원 일대",
+    bookingType: "공식 상세에 사전예매 정보 미공개",
+    priceNote: "입장·시음 가격 미공개, 현장 구매 비용 발생 예상",
+    weatherRisk: "야외 행사로 우천 시 프로그램 변경 가능",
+    trafficNote: "대중교통 귀가 권장, 음주 후 운전 금지",
+    familyFit: "먹거리·공연 구역은 이용 가능할 수 있으나 주류 행사의 연령 운영 확인 필요",
+    details: { "예정 기간": "2026.09.18~09.19", "예정 시간": "15:00~22:00", "예정 장소": "영등포공원 일대", "공개 프로그램": "12개 브루어리·푸드트럭·플리마켓·공연", "가격": "2026.08.06 기준 미공개" },
+    keyChecks: ["최종 개최 공지", "입장·시음 가격", "성인 인증 방식", "우천 변경과 귀가 교통"],
+    sourceLinks: [{ label: "서울특별시 축제 상세", url: "https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=589" }],
+    officialLinks: [{ label: "서울특별시 축제 상세", url: "https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=589" }],
+    eventSchema: { startDate: "2026-09-18T15:00:00+09:00", endDate: "2026-09-19T22:00:00+09:00", locationName: "영등포공원", locationAddress: "서울특별시 영등포구 신길로 275", organizerName: "영등포구", eventStatus: "https://schema.org/EventScheduled", priceCurrency: "KRW", availability: "https://schema.org/PreOrder", ticketUrl: "https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=589" },
+    body: [
+      "## 현재 확정된 것과 예정인 것",
+      "서울특별시 펀서울에는 제2회 영등포구 원조맥주축제가 2026년 9월 18일과 19일, 15시부터 22시까지 영등포공원 일대에서 열릴 예정이라고 게시돼 있다. 전국 12개 브루어리의 약 70종 수제맥주, 푸드트럭, 플리마켓, 공연과 체험이 포함된다는 계획도 공개됐다.",
+      "하지만 가격, 시음권 구성, 사전예매, 성인 인증 방식은 8월 6일 확인 시점에 공식 상세에서 찾을 수 없다. 미공개 항목을 작년 운영 방식으로 채우지 않고 '미정'으로 남겨 두는 것이 맞다.",
+      "## 방문 여부는 가격 공지 뒤에 결정한다",
+      "맥주축제는 입장료가 없더라도 시음잔, 교환권, 개별 맥주와 음식 구매 비용이 생길 수 있다. 일행 수와 마실 양을 고려해 공식 가격표가 공개된 뒤 예산을 정한다. 현금 없는 행사인지, 카드와 간편결제가 가능한지도 최신 안내에서 확인한다.",
+      "주류 구매에는 성인 인증이 필요할 가능성이 높다. 모바일 신분증 인정 여부는 현재 공식 페이지에 적혀 있지 않으므로 실물 신분증을 준비하는 편이 안전하다.",
+      "## 영등포공원에서 22시에 끝난 뒤",
+      "행사가 밤 10시까지 예정돼 있어 귀가 동선이 중요하다. 음주할 계획이라면 차량을 가져가지 않는다. 일행과 헤어질 역, 마지막 주문 시각, 대중교통 막차를 미리 정하면 종료 직후 혼잡을 피할 수 있다.",
+      "영등포공원은 야외 공간이므로 비가 오면 공연과 플리마켓 운영이 바뀔 수 있다. 전체 취소 여부뿐 아니라 무대 시간, 판매 부스, 좌석 운영 변경을 확인한다.",
+      "## 재확인이 필요한 네 가지",
+      "- 영등포구 또는 펀서울의 최종 개최 확정 공지\n- 입장료, 시음권, 결제 수단\n- 성인 인증과 미성년자 동반 구역\n- 우천 운영과 대중교통 통제",
+      "## 맥주 행사라는 이름만 보고 준비하지 않는다",
+      "행사명에 맥주가 들어가도 입장권에 시음이 포함되는지, 잔과 토큰을 별도로 사는지, 음식 부스 결제가 어떤 방식인지는 아직 확정되지 않았다. 무료입장과 무료시음은 전혀 다른 조건이다. 최종 공지가 나오기 전에는 작년 행사 방식이나 다른 지역 축제의 가격을 가져와 예산을 만들지 않는다.",
+      "성인 인증이 필요한 구역과 가족이 머물 수 있는 구역도 공식 배치도에서 확인해야 한다. 일행 중 운전자가 있다면 음주하지 않는 사람을 미리 정하고, 대중교통으로 귀가할 경우 22시 종료 뒤 영등포역과 주변 정류장의 혼잡을 고려한다.",
+      "이 페이지는 확정되지 않은 정보를 그럴듯하게 보완하지 않는다. 2026년 8월 6일 현재 공개된 일정·장소·프로그램만 기록했으며, 다음 확인 예정일은 행사 일주일 전인 9월 11일이다."
+    ]
   }),
-  createEventItem({
-    slug: "gwangju-street-art-day",
-    title: "광주 거리예술 행사 방문 기준",
-    summary: "광주 거리예술 행사를 공연 위치, 보행 동선, 우천 변경 기준으로 정리했습니다.",
+  verifiedEvent({
+    slug: "seoul-walk-festival-2026",
+    title: "2026 서울 걷자 페스티벌 4.4km 코스 준비",
+    summary: "9월 20일 오전 DDP에서 광화문광장까지 교통통제된 도로 4.4km를 걷는 사전신청 행사입니다. 집결 시각과 귀가 동선을 정리했습니다.",
+    category: "체험·가족",
+    region: "서울 중구·종로구",
+    period: "예정 2026.09.20 · 07:30~11:00",
+    source: "서울특별시 펀서울",
+    sourceUrl: "https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=363",
+    updatedAt: "2026-08-06T14:57:00+09:00",
+    lastCheckedAt: "2026-08-06T14:57:00+09:00",
+    nextReviewAt: "2026-09-13T10:00:00+09:00",
+    readingTime: "7분",
+    audience: "가족 또는 친구와 서울 도심 4.4km 보행 행사에 참여하려는 신청자",
+    tags: ["걷기", "DDP", "광화문", "사전신청", "교통통제"],
+    statusBadges: ["사전신청", "4.4km", "오전 행사"],
+    eventDateStatus: "2026년 9월 20일 예정",
+    venue: "DDP 출발·광화문광장 도착",
+    bookingType: "약 5,000명 사전 신청자 대상",
+    priceNote: "공식 상세에 참가비 미기재",
+    weatherRisk: "우천·폭염 시 운영 공지 확인",
+    trafficNote: "출발지와 도착지가 달라 차량 이용보다 대중교통 적합",
+    familyFit: "비경쟁 4.4km 코스, 어린이 보행 가능 거리와 화장실 계획 필요",
+    details: { "행사일": "2026.09.20 예정", "집결·운영": "07:30~11:00, 08:00 출발", "코스": "DDP→흥인지문→율곡터널→광화문광장", "거리": "비경쟁 4.4km", "참가 규모": "사전 신청자 약 5,000명" },
+    keyChecks: ["사전신청 완료", "집결 장소와 출발 시각", "4.4km 보행 준비", "도착지에서의 귀가 교통"],
+    sourceLinks: [{ label: "서울특별시 축제 상세", url: "https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=363" }],
+    officialLinks: [{ label: "서울 걷자 페스티벌 공식", url: "https://www.walkseoul.com/" }],
+    eventSchema: { startDate: "2026-09-20T07:30:00+09:00", endDate: "2026-09-20T11:00:00+09:00", locationName: "DDP~광화문광장", locationAddress: "서울특별시 중구 을지로 281 출발", organizerName: "서울특별시", eventStatus: "https://schema.org/EventScheduled", availability: "https://schema.org/PreOrder", ticketUrl: "https://www.walkseoul.com/" },
+    body: [
+      "## 출발지와 도착지가 다르다",
+      "2026 서울 걷자 페스티벌은 9월 20일 오전 7시 30분부터 11시까지 열릴 예정이며, 8시에 DDP에서 출발해 광화문광장에 도착하는 비경쟁 4.4km 보행 행사다. 코스는 흥인지문, 율곡터널, 창덕궁삼거리, 경복궁사거리를 지난다.",
+      "차량을 DDP 인근에 세우면 완주 후 광화문에서 다시 돌아가야 한다. 출발지와 도착지가 다른 행사에서는 대중교통 이용이 훨씬 단순하다. 일행과 만날 장소도 DDP 건물 전체가 아니라 지정 집결 구역 또는 지하철 출구로 정한다.",
+      "## 사전 신청을 입장권처럼 관리한다",
+      "공식 상세는 약 5,000명의 사전 신청자를 대상으로 한다고 설명한다. 신청 완료 화면, 참가자 안내 문자, 배번호나 물품 수령 방식이 공지되면 캘린더와 함께 저장한다. 동행자 각각의 신청이 필요한지 대표 신청인지도 확인해야 한다.",
+      "행사 시작 직전에는 준비운동과 기념촬영이 예정돼 있다. 8시 출발 시각에 DDP에 도착하는 것이 아니라, 집결과 참가자 확인을 끝낼 시간을 고려해 더 일찍 도착해야 한다.",
+      "## 4.4km를 가족과 걷는 기준",
+      "비경쟁 행사라도 도심 도로를 많은 인원이 함께 걷는다. 어린이가 동행한다면 평소 4.4km를 걸을 수 있는지, 유모차 허용 여부, 중간 이탈 지점과 화장실을 공식 참가자 안내에서 확인한다. 행진 중에는 율곡터널 조명쇼와 버스킹이 예정돼 있어 멈추는 인원이 생길 수 있다.",
+      "9월 아침은 출발할 때 선선해도 해가 오르면 더워질 수 있다. 가벼운 물, 모자, 발에 익은 운동화를 준비하고 새 신발은 피한다. 비 예보가 있으면 우산보다 보행에 방해가 적은 우비가 낫지만, 주최 측 우천 운영 기준이 먼저다.",
+      "## 완주 뒤 계획",
+      "광화문광장에서는 축하공연과 참여 부스가 예정돼 있다. 완주 직후 바로 귀가할지 프로그램을 더 볼지에 따라 식사와 교통 시간을 나눈다. 대규모 보행 행사로 주변 도로가 통제되므로 버스보다 지하철이 예측하기 쉽다.",
+      "## 참가 전 확인 목록",
+      "- 참가 신청 완료와 참가자 안내 수신 여부\n- DDP 집결 위치와 확인 마감 시각\n- 우천 운영, 준비물, 유모차 허용 여부\n- 광화문 도착 뒤 귀가 역과 일행 만남 장소",
+      "참가자 5천 명이 같은 시각에 움직이는 행사에서는 출발선과 도착선의 화장실·보관·집결 위치가 평소와 다를 수 있다. 번호표나 모바일 확인 화면이 필요한지 안내 문자를 다시 읽고, 일행과 걷는 속도가 다르면 광화문광장의 구체적인 재집결 지점을 정한다. 완주 기록보다 안전한 보행이 우선이며, 불편이 생기면 중간 이탈 경로도 확인한다.",
+      "이 글은 2026년 8월 6일 서울특별시 행사 상세에 공개된 일정, 코스, 참가 규모를 기준으로 작성했다. 신청 일정과 참가비는 공식 페이지에 최종 공지가 올라오기 전까지 추정하지 않는다."
+    ]
+  }),
+  verifiedEvent({
+    slug: "busan-rock-festival-2026",
+    title: "2026 부산국제록페스티벌 3일 일정과 삼락생태공원 준비",
+    summary: "10월 2일부터 4일까지 삼락생태공원에서 열리는 야외 음악축제입니다. 아직 공개 전인 티켓·라인업 정보는 구분하고, 이동과 체력 계획을 먼저 정리했습니다.",
     category: "축제",
-    region: "광주",
-    source: "광주문화재단",
-    sourceUrl: "https://www.gjcf.or.kr/",
-    tags: ["광주", "거리예술", "공연"],
-    meta: {
-      eventDateStatus: "광주문화재단과 행사 공식 공지에서 운영일 확인",
-      venue: "광주 도심 문화공간",
-      bookingType: "자유 관람 중심, 일부 프로그램 예약 여부 확인",
-      priceNote: "관람 무료 행사라도 체험과 주변 소비 비용 별도",
-      weatherRisk: "거리 공연은 우천 시 장소 변경 또는 취소 가능",
-      trafficNote: "공연 위치가 여러 곳이면 도보 이동 시간을 먼저 계산",
-      familyFit: "아이 동반은 공연 소리 크기와 휴식 공간 확인",
-      statusBadges: ["거리예술", "무료가능", "우천확인"],
-      bestFor: "도심 산책과 공연을 함께 보려는 방문자",
-      editorNote: "거리예술은 한 장소에 머무르기보다 이동하며 보는 구조가 많습니다.",
-      avoidNote: "한 공연을 끝까지 봐야 하는 일정이라면 회차 시간을 정확히 확인하세요.",
-      sourceCheck: "광주문화재단 공지와 개별 행사 안내를 함께 보세요."
-    }
+    region: "부산 사상구",
+    period: "2026.10.02~10.04 · 3일간",
+    source: "부산축제조직위원회",
+    sourceUrl: "https://www.bfo.or.kr/announcement/366",
+    updatedAt: "2026-08-06T15:13:00+09:00",
+    lastCheckedAt: "2026-08-06T15:13:00+09:00",
+    nextReviewAt: "2026-09-25T10:00:00+09:00",
+    readingTime: "7분",
+    audience: "부산 외 지역에서 삼락생태공원 야외 음악축제를 준비하는 관객",
+    tags: ["부산", "록페스티벌", "삼락생태공원", "야외공연", "티켓확인"],
+    statusBadges: ["10월 예정", "야외공연", "티켓 확인"],
+    eventDateStatus: "2026년 10월 2일부터 4일까지",
+    venue: "부산 삼락생태공원 일원",
+    bookingType: "티켓·라인업 공식 발표 후 예매처 확인",
+    priceNote: "2026년 티켓 가격 공식 발표 전",
+    weatherRisk: "우천·강풍과 잔디 지면 상태 영향",
+    trafficNote: "공원 진입과 공연 종료 후 대중교통 혼잡 예상",
+    familyFit: "장시간 야외 공연으로 어린이 동반 시 소음·휴식 계획 필요",
+    details: { "행사 기간": "2026.10.02~10.04", "행사장": "삼락생태공원 일원", "주최·주관": "부산광역시·부산축제조직위원회", "티켓": "공식 발표 확인 필요", "주소": "부산 사상구 삼락동 29-46 일대" },
+    keyChecks: ["일자별 라인업", "티켓 권종과 재입장", "셔틀·대중교통", "우천 준비와 지면 상태"],
+    sourceLinks: [
+      { label: "2026 행사 개요가 포함된 공식 공고", url: "https://www.bfo.or.kr/announcement/366" },
+      { label: "부산축제조직위원회", url: "https://www.bfo.or.kr/" }
+    ],
+    officialLinks: [{ label: "부산축제조직위원회 공식 공고", url: "https://www.bfo.or.kr/announcement/366" }],
+    eventSchema: { startDate: "2026-10-02", endDate: "2026-10-04", locationName: "삼락생태공원", locationAddress: "부산광역시 사상구 삼락동 29-46 일대", organizerName: "부산광역시", eventStatus: "https://schema.org/EventScheduled", priceCurrency: "KRW", availability: "https://schema.org/PreOrder", ticketUrl: "https://www.bfo.or.kr/" },
+    body: [
+      "## 날짜와 장소는 확정 공고에서 확인했다",
+      "부산축제조직위원회의 2026 부산국제록페스티벌 공식 모집 공고에는 행사가 10월 2일부터 4일까지 3일간 부산 삼락생태공원 일원에서 열린다고 명시돼 있다. 같은 공고는 부산광역시와 부산축제조직위원회를 주최·주관으로 적고 있다.",
+      "8월 6일 확인 시점에는 관객용 전체 라인업, 티켓 권종과 가격을 이 공고에서 확인할 수 없었다. 과거 회차 가격이나 출연진을 2026 정보처럼 재사용하지 않고 공식 발표 대기 상태로 표시한다.",
+      "## 3일권과 일일권을 고르기 전에",
+      "라인업이 공개되면 좋아하는 팀 수보다 공연 시간 충돌을 먼저 본다. 서로 다른 무대에서 공연이 겹치면 3일권을 사도 모든 팀을 볼 수 없다. 숙박이 필요한 방문자는 티켓보다 취소 가능한 숙소를 먼저 확보하되, 공식 일정 변경 가능성을 고려한다.",
+      "예매권의 재입장, 팔찌 수령, 신분증 검사, 양도 제한은 티켓 공지에서 확인해야 한다. 모바일 예매 화면만 준비하지 말고 통신 혼잡에 대비해 예매번호를 별도로 저장한다.",
+      "## 삼락생태공원이라는 장소",
+      "대형 야외공원은 입구에서 무대까지 걷는 시간이 길고, 비가 오면 잔디와 흙길 상태가 빠르게 나빠진다. 방수 신발, 얇은 우의, 여분 양말은 우산보다 공연 관람에 실용적이다. 맑은 날에도 낮과 밤의 체감온도 차가 커 겉옷이 필요하다.",
+      "공연 종료 뒤에는 한꺼번에 관객이 이동한다. 공식 셔틀이 발표되면 정류장과 막차를 확인하고, 그렇지 않다면 가장 가까운 대중교통까지 실제 보행 거리를 지도에서 본다. 택시 승차만 계획하면 호출 지연과 통제 구역 때문에 귀가가 늦어질 수 있다.",
+      "## 하루 체력을 배분하는 법",
+      "첫 공연부터 마지막 공연까지 계속 서 있으면 저녁 핵심 무대에서 지친다. 반드시 볼 공연과 쉬어도 되는 시간을 나누고, 식사 대기 시간을 라인업 사이에 넣는다. 소리가 큰 무대 앞에 오래 있을 계획이라면 귀마개를 준비한다.",
+      "## 공식 발표 뒤 업데이트할 항목",
+      "- 날짜별 라인업과 무대 시간표\n- 일일권·3일권 가격과 취소 규정\n- 팔찌 수령, 재입장, 반입 금지 물품\n- 셔틀버스와 교통통제\n- 우천 시 운영 기준",
+      "공연 시간표가 공개되면 아티스트 이름만 저장하지 말고 무대와 시작 시각, 겹치는 공연을 표시해야 한다. 입장 팔찌 수령 줄과 보안 검색은 첫 공연 전에 시간을 더 필요로 할 수 있다. 돗자리·물병·보조배터리·우산의 반입 규정도 일반 공원 이용 규정과 다를 수 있으므로 관객 안내를 별도로 읽는다.",
+      "이 글은 확인되지 않은 관객 정보를 채우지 않는다. 2026년 8월 6일 현재 공식 공고로 확인되는 날짜·장소·주최 정보만 확정으로 표시했고, 관객용 발표 후 다시 검토하도록 다음 확인 시점을 남겼다."
+    ]
   }),
-  createEventItem({
-    slug: "incheon-open-port-night",
-    title: "인천 개항장 야간 행사 동선",
-    summary: "인천 개항장 야간 행사를 조명, 도보 이동, 귀가 교통 기준으로 정리했습니다.",
-    category: "축제",
-    region: "인천",
-    source: "인천투어",
-    sourceUrl: "https://itour.incheon.go.kr/",
-    tags: ["인천", "개항장", "야간"],
-    meta: {
-      eventDateStatus: "인천투어와 주최 측 공지에서 야간 운영일 확인",
-      venue: "인천 개항장 일대",
-      bookingType: "자유 관람과 프로그램 예약 분리 확인",
-      priceNote: "거리 관람은 무료 가능, 체험·전시·식음료는 별도",
-      weatherRisk: "야간 우천 시 보행 동선과 사진 촬영 조건 확인",
-      trafficNote: "인천역, 차이나타운, 개항장 이동 동선 확인",
-      familyFit: "야간 방문은 아이 동반 시 귀가 시간을 짧게 잡는 편이 좋음",
-      statusBadges: ["야간행사", "도보동선", "교통확인"],
-      bestFor: "인천 도심 야간 산책과 행사를 묶어보려는 방문자",
-      editorNote: "개항장은 골목 이동이 많아 지도 저장이 실제 체류 시간을 줄여줍니다.",
-      avoidNote: "비 오는 밤에는 계단과 골목 이동이 불편할 수 있습니다.",
-      sourceCheck: "인천투어 행사 안내와 주최 측 공지를 함께 확인하세요."
-    }
+  verifiedEvent({
+    slug: "seoul-silvergrass-festival-2026",
+    title: "2026 서울억새축제 하늘공원 야간 관람 준비",
+    summary: "10월 17일부터 23일까지 하늘공원에서 열리는 무료 생태문화축제입니다. 경사 이동, 야간 조명, 체험 운영과 귀가 시간을 중심으로 확인했습니다.",
+    category: "무료 행사",
+    region: "서울 마포구",
+    period: "2026.10.17~10.23 · 하늘공원",
+    source: "서울특별시 펀서울",
+    sourceUrl: "https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=683",
+    updatedAt: "2026-08-06T15:29:00+09:00",
+    lastCheckedAt: "2026-08-06T15:29:00+09:00",
+    nextReviewAt: "2026-10-15T10:00:00+09:00",
+    readingTime: "7분",
+    audience: "야간 억새 경관과 체험 프로그램을 보려는 가족·사진 방문자",
+    tags: ["하늘공원", "억새", "무료", "야간", "가족"],
+    statusBadges: ["무료", "야간경관", "경사 이동"],
+    eventDateStatus: "2026년 10월 17일부터 23일까지",
+    venue: "서울월드컵공원 하늘공원 일대",
+    bookingType: "공원 자유관람, 체험은 현장 운영 확인",
+    priceNote: "무료",
+    weatherRisk: "강풍·비·기온 저하 시 야간 체류 부담",
+    trafficNote: "하늘공원 진입 경사와 귀가 인파 고려",
+    familyFit: "가족 체험 가능, 어린이·고령자 경사 이동과 휴식 계획 필요",
+    details: { "행사 기간": "2026.10.17~10.23", "행사장": "월드컵공원 하늘공원 일대", "요금": "무료", "주요 프로그램": "개막식·체험존·버스킹·야간 경관", "주소": "서울 마포구 하늘공원로 95" },
+    keyChecks: ["일몰·야간 프로그램 시간", "하늘공원 진입 방법", "강풍·우천 공지", "귀가 교통"],
+    sourceLinks: [{ label: "서울특별시 축제 상세", url: "https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=683" }],
+    officialLinks: [{ label: "서울특별시 축제 상세", url: "https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=683" }],
+    eventSchema: { startDate: "2026-10-17", endDate: "2026-10-23", locationName: "월드컵공원 하늘공원", locationAddress: "서울특별시 마포구 하늘공원로 95", organizerName: "서울특별시", eventStatus: "https://schema.org/EventScheduled", price: 0, priceCurrency: "KRW", availability: "https://schema.org/InStock", ticketUrl: "https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=683" },
+    body: [
+      "## 억새를 보는 시간과 축제를 보는 시간",
+      "서울억새축제는 10월 17일부터 23일까지 하늘공원 일대에서 열린다. 공식 페이지는 개막식, 억새 꽃다발 만들기, 포토존, 버스킹, 사진 전시와 야간 경관을 주요 내용으로 안내한다. 억새밭 자체를 걷는 것과 특정 체험·공연에 참여하는 것은 시간 계획이 다르다.",
+      "사진이 목적이면 일몰 전에 올라가 낮의 억새와 조명을 모두 보는 방식이 좋지만, 그만큼 하늘공원 체류 시간이 길어진다. 체험이나 버스킹이 목적이면 프로그램 시간에 맞춰 올라가 불필요한 대기를 줄인다.",
+      "## 평지 공원처럼 생각하지 않는다",
+      "하늘공원은 진입 과정에 경사와 보행 구간이 있다. 어린이, 고령자, 무릎이 불편한 동행자가 있다면 올라가는 방법과 예상 시간을 먼저 확인한다. 축제 기간에는 이동 수단 대기와 보행 인파가 평소보다 늘 수 있다.",
+      "공원 안에서 다시 일행을 찾기 어려울 수 있으므로 '억새밭 입구'보다 구체적인 안내소나 표지물을 만남 장소로 정한다. 휴대전화 배터리는 야간 사진 촬영과 지도 사용으로 빨리 줄어든다.",
+      "## 10월 밤의 날씨",
+      "하늘공원은 도심보다 바람을 직접 받는다. 낮 기온만 보고 옷을 준비하면 해가 진 뒤 체감온도가 크게 내려갈 수 있다. 얇은 겉옷, 물, 편한 신발을 준비하고 강풍 예보가 있으면 야간 체류를 줄인다.",
+      "비가 오면 억새밭 길과 경사 구간이 미끄러울 수 있고 버스킹이나 체험이 변경될 수 있다. 전체 축제가 열린다는 공지만으로 개별 프로그램이 정상이라고 판단하지 않는다.",
+      "## 무료 행사의 실제 비용",
+      "공식 행사 요금은 무료다. 다만 교통, 식음, 현장 판매 물품과 주변 주차는 별도다. 차량을 이용하면 행사장과 주차 위치 사이 이동도 고려해야 한다. 대중교통 이용 시 귀가 인파가 몰리는 시간을 피해 프로그램 종료 전 이동하는 선택도 있다.",
+      "## 당일 메모",
+      "- 보고 싶은 버스킹·체험 시간을 확인한다.\n- 하늘공원 진입 방법과 소요 시간을 계산한다.\n- 일몰 시각과 야간 기온을 확인한다.\n- 강풍·우천 변경 공지를 다시 본다.\n- 동행자 만남 장소와 귀가 역을 정한다.",
+      "억새밭의 통로는 관람객이 몰리면 보행 속도가 크게 떨어진다. 사진을 찍을 장소에서 오래 멈추기보다 통행 방향을 따르고, 일몰 직전에는 내려오는 시간까지 포함해 체류 시간을 정한다. 아이나 고령자와 함께라면 하늘공원 진입 방법과 휴식 간격을 먼저 선택하고, 야간 프로그램 하나를 포기할 기준도 세운다.",
+      "이 글은 2026년 8월 6일 서울특별시 펀서울에 공개된 2026 일정과 프로그램 설명을 기준으로 작성했다. 세부 시간표는 축제 직전 최신 공지가 우선한다."
+    ]
   }),
-  createEventItem({
-    slug: "jeonju-hanok-village-performance",
-    title: "전주 한옥마을 공연 행사 확인",
-    summary: "전주 한옥마을 공연과 체험을 보행 혼잡, 주차, 주변 관광 연계 기준으로 정리했습니다.",
-    category: "가족 나들이",
-    region: "전북",
-    source: "전주시 문화관광",
-    sourceUrl: "https://tour.jeonju.go.kr/",
-    tags: ["전주", "한옥마을", "공연"],
-    meta: {
-      eventDateStatus: "전주시 문화관광과 행사 공식 공지에서 일정 확인",
-      venue: "전주 한옥마을 일대",
-      bookingType: "자유 관람, 체험 예약, 공연 회차 분리 확인",
-      priceNote: "공연 관람은 무료 가능, 한복·체험·식사 비용 별도",
-      weatherRisk: "비 오는 날은 골목 이동과 야외 공연 변경 확인",
-      trafficNote: "한옥마을 주변 주차장 만차와 셔틀 여부 확인",
-      familyFit: "가족 방문은 휴식 공간과 식사 시간을 먼저 확보",
-      statusBadges: ["가족방문", "보행혼잡", "주차확인"],
-      bestFor: "전주 여행 중 공연과 골목 산책을 함께 하려는 방문자",
-      editorNote: "한옥마을 행사는 행사 자체보다 주변 보행 혼잡이 더 큰 변수가 됩니다.",
-      avoidNote: "차량으로 행사장 바로 앞까지 이동하려는 일정은 피하는 편이 좋습니다.",
-      sourceCheck: "전주시 문화관광과 행사 주최 안내를 함께 확인하세요."
-    }
+  verifiedEvent({
+    slug: "busan-fireworks-festival-2026",
+    title: "2026 부산불꽃축제 11월 7일 관람 구역과 귀가",
+    summary: "11월 7일 광안리·해운대·이기대 일원에서 열리는 대형 야간 축제입니다. 무료 관람 구역과 추후 공개될 유료 좌석을 구분하고 교통을 준비합니다.",
+    category: "야간 행사",
+    region: "부산 수영·해운대·남구",
+    period: "2026.11.07 · 단 하루",
+    source: "부산축제조직위원회",
+    sourceUrl: "https://www.bfo.or.kr/event/56",
+    updatedAt: "2026-08-06T15:44:00+09:00",
+    lastCheckedAt: "2026-08-06T15:44:00+09:00",
+    nextReviewAt: "2026-10-30T10:00:00+09:00",
+    readingTime: "8분",
+    audience: "무료 관람 또는 유료 좌석을 비교하고 부산 야간 귀가를 준비하는 방문자",
+    tags: ["부산", "불꽃축제", "광안리", "교통통제", "유료좌석"],
+    statusBadges: ["11월 7일", "교통통제", "좌석 공지 대기"],
+    eventDateStatus: "2026년 11월 7일",
+    venue: "광안리해수욕장·해운대·이기대 일원",
+    bookingType: "일반 관람 구역과 유료 좌석 분리, 2026 티켓 공지 확인 필요",
+    priceNote: "무료 관람 가능 구역 존재, 유료 좌석 가격은 공식 발표 전",
+    weatherRisk: "강풍·호우 시 불꽃 연출과 일정 변경 가능",
+    trafficNote: "대규모 교통통제와 도시철도 역사 혼잡 예상",
+    familyFit: "아이 동반 시 소음 보호, 장시간 대기, 화장실과 이탈 동선 준비",
+    details: { "행사일": "2026.11.07", "주요 장소": "광안리해수욕장·해운대·이기대", "주요 프로그램": "사전행사·해외초청불꽃쇼·부산멀티불꽃쇼", "유료 좌석": "2026.08.06 기준 추후 업데이트", "주최": "부산광역시" },
+    keyChecks: ["불꽃 시작과 종료 시각", "유료 좌석 공식 예매처", "교통통제와 역사 출입", "강풍·호우 변경 공지"],
+    sourceLinks: [
+      { label: "부산축제조직위원회 행사 상세", url: "https://www.bfo.or.kr/event/56" },
+      { label: "유료 좌석 안내", url: "https://www.bfo.or.kr/festival/info/ticket.asp" }
+    ],
+    officialLinks: [{ label: "부산축제조직위원회 행사 상세", url: "https://www.bfo.or.kr/event/56" }],
+    eventSchema: { startDate: "2026-11-07", endDate: "2026-11-07", locationName: "광안리해수욕장·해운대·이기대", locationAddress: "부산광역시 수영구 광안해변로 219 일대", organizerName: "부산광역시", eventStatus: "https://schema.org/EventScheduled", priceCurrency: "KRW", availability: "https://schema.org/PreOrder", ticketUrl: "https://www.bfo.or.kr/festival/info/ticket.asp" },
+    body: [
+      "## 2026년 날짜는 11월 7일",
+      "부산축제조직위원회 행사 상세는 2026 부산불꽃축제를 11월 7일 광안리해수욕장, 해운대, 이기대 일원에서 여는 일정으로 공개했다. 주요 프로그램은 사전행사, 해외초청불꽃쇼와 부산멀티불꽃쇼다. 단 하루 행사라 날짜를 바꿀 수 없고, 날씨와 교통 변수가 곧 관람 가능성을 좌우한다.",
+      "유료 좌석 안내 페이지는 8월 6일 확인 시 '추후 업데이트 예정' 상태다. 가격과 판매처가 나오지 않았는데 과거 좌석 가격을 올해 정보처럼 적는 것은 위험하다. 공식 판매 공지가 열린 뒤 좌석등급, 환불, 티켓 수령을 다시 확인해야 한다.",
+      "## 무료 관람과 유료 좌석의 차이",
+      "광안리 일대에는 무료로 볼 수 있는 구역이 있지만 자리와 시야가 보장되지 않는다. 유료 좌석은 지정 공간과 편의가 장점이지만 예매 비용과 입장 마감이 생긴다. 어느 쪽이든 행사장에 늦게 도착하면 원하는 위치를 확보하기 어렵다.",
+      "해운대와 이기대에서도 관람 가능하다고 안내되지만, 메인 연출의 방향과 음향 경험은 광안리와 다를 수 있다. 혼잡을 피하기 위해 다른 지역을 고른다면 시야와 귀가를 함께 비교한다.",
+      "## 가장 큰 문제는 종료 후 이동",
+      "불꽃이 끝나면 광안리 일대 보행자와 도시철도 이용자가 동시에 움직인다. 가까운 역이 가장 빠른 역은 아닐 수 있다. 공식 교통통제 지도와 역사 출입 통제 안내가 공개되면 광안역, 금련산역 등 후보를 비교하고 일행의 귀가 방향에 맞춰 분산한다.",
+      "차량은 행사장 주변 진입이 제한될 수 있어 권장하기 어렵다. 숙소를 잡는다면 광안리에서의 직선거리보다 통제 구역 밖에서 도보로 돌아갈 수 있는지를 본다.",
+      "## 아이와 함께 볼 때",
+      "불꽃 소리는 어린이에게 크게 느껴질 수 있어 귀마개를 준비한다. 오랜 시간 같은 자리에 대기해야 하므로 화장실, 간식, 방한 옷과 중도 이탈 경로를 먼저 확인한다. 유모차는 인파 속 이동이 어려울 수 있다.",
+      "## 11월 7일 전 마지막 확인",
+      "- 불꽃 시작·종료 시각과 사전행사 시간\n- 유료 좌석 공식 판매처와 티켓 수령\n- 광안리·해운대·이기대 중 관람 지역\n- 교통통제와 도시철도 역사 출입\n- 강풍·호우 시 변경 또는 연기 공지",
+      "관람 지역을 정한 뒤에는 바다를 향한 시야뿐 아니라 통제선 밖으로 나가는 방향을 지도에 표시한다. 광안리에서 가장 가까운 역만 고집하면 종료 직후 인파에 오래 머물 수 있다. 해운대나 이기대에서 보는 경우에도 공식 관람 가능 구역과 안전 통제를 확인하고, 임의의 해안 비탈이나 차도에서 관람하지 않는다.",
+      "이 글은 2026년 8월 6일 부산축제조직위원회가 공개한 날짜·장소와 유료 좌석 페이지의 미공개 상태를 그대로 기록했다. 가격과 시간표는 발표 전까지 추정하지 않는다."
+    ]
   }),
-  createEventItem({
-    slug: "ulsan-river-family-market",
-    title: "울산 강변 가족 마켓 행사",
-    summary: "울산 강변 마켓 행사를 가족 방문, 현장 결제, 우천 변경 기준으로 정리했습니다.",
-    category: "가족 나들이",
-    region: "울산",
-    source: "울산문화관광",
-    sourceUrl: "https://tour.ulsan.go.kr/",
-    tags: ["울산", "마켓", "가족"],
-    meta: {
-      eventDateStatus: "울산문화관광과 행사 주최 공지에서 운영일 확인",
-      venue: "울산 강변 및 공원형 행사장",
-      bookingType: "자유 방문 중심, 체험 부스 사전 신청 여부 확인",
-      priceNote: "입장 무료 가능, 체험·먹거리·주차 비용 별도",
-      weatherRisk: "강변 행사는 바람과 우천 시 부스 운영 변경 가능",
-      trafficNote: "행사장 입구와 주차장 위치를 지도에 저장",
-      familyFit: "아이 동반은 화장실과 그늘 위치를 먼저 확인",
-      statusBadges: ["가족방문", "마켓", "우천확인"],
-      bestFor: "가족과 가볍게 걷고 먹거리 부스를 둘러보려는 방문자",
-      editorNote: "마켓형 행사는 무료 관람과 소비 비용을 분리해 보는 것이 현실적입니다.",
-      avoidNote: "현장 결제 줄이 긴 시간대에는 아이 동반 체류가 어려울 수 있습니다.",
-      sourceCheck: "울산문화관광 안내와 주최 측 공지를 함께 확인하세요."
-    }
-  }),
-  createEventItem({
-    slug: "suncheon-garden-night-walk",
-    title: "순천만 국가정원 야간 산책 체크",
-    summary: "순천만 국가정원 야간 방문을 입장 시간, 관람차, 귀가 동선 기준으로 정리했습니다.",
-    category: "가족 나들이",
-    region: "전남",
-    source: "순천만국가정원",
-    sourceUrl: "https://scbay.suncheon.go.kr/",
-    tags: ["순천", "국가정원", "야간"],
-    meta: {
-      eventDateStatus: "순천만국가정원 공식 운영시간과 시즌 행사 확인",
-      venue: "순천만국가정원",
-      bookingType: "입장권, 관람차, 프로그램 예약 여부 확인",
-      priceNote: "입장권과 관람차·체험 비용 분리 확인",
-      weatherRisk: "우천, 폭염, 야간 냉방·방한 준비 확인",
-      trafficNote: "폐장 시간 전 귀가 교통편과 주차장 위치 확인",
-      familyFit: "아이와 부모님 동반은 이동 거리와 휴식 지점 확인",
-      statusBadges: ["야간산책", "가족방문", "입장마감"],
-      bestFor: "정원 산책과 사진 촬영을 여유 있게 하려는 방문자",
-      editorNote: "정원형 행사는 보고 싶은 구역을 줄이는 것이 만족도를 높입니다.",
-      avoidNote: "폐장 직전 입장은 이동 거리에 비해 관람 시간이 짧습니다.",
-      sourceCheck: "순천만국가정원 공식 운영시간과 행사 공지를 확인하세요."
-    }
+  verifiedEvent({
+    slug: "seoul-winter-festa-2026",
+    title: "2026 서울윈터페스타 7개 장소를 하루에 고르는 법",
+    summary: "12월 4일부터 2027년 1월 31일까지 광화문 등 서울 도심 7곳에서 이어질 예정입니다. 빛 전시, 마켓, 타종행사를 같은 행사로 뭉뚱그리지 않고 나눴습니다.",
+    category: "야간 행사",
+    region: "서울 도심",
+    period: "예정 2026.12.04~2027.01.31",
+    source: "서울특별시 펀서울",
+    sourceUrl: "https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=373",
+    updatedAt: "2026-08-06T15:59:00+09:00",
+    lastCheckedAt: "2026-08-06T15:59:00+09:00",
+    nextReviewAt: "2026-11-27T10:00:00+09:00",
+    readingTime: "7분",
+    audience: "겨울 도심 빛 전시와 마켓 중 하루 동선을 고르려는 방문자",
+    tags: ["서울", "겨울", "빛축제", "광화문", "야간", "예정"],
+    statusBadges: ["12월 예정", "다중 장소", "세부 공지 대기"],
+    eventDateStatus: "2026년 12월 4일부터 2027년 1월 31일까지 예정",
+    venue: "광화문광장 외 서울 도심 6곳",
+    bookingType: "빛 전시 자유관람 중심, 프로그램별 예약·구매 조건 별도",
+    priceNote: "대표 야외 전시는 무료 중심, 마켓 구매와 일부 프로그램 별도",
+    weatherRisk: "한파·강설 시 야외 체류와 프로그램 변경",
+    trafficNote: "장소별 지하철역이 달라 하루 한 권역 중심 권장",
+    familyFit: "가족 관람 가능, 야간 한파와 인파 속 만남 장소 준비",
+    details: { "예정 기간": "2026.12.04~2027.01.31", "주요 장소": "광화문광장 외 6곳", "예정 콘텐츠": "서울라이트광화문·광화문마켓·제야의 종 등", "세부 시간": "2026.08.06 기준 미공개", "요금": "프로그램별 확인" },
+    keyChecks: ["방문 장소와 프로그램", "장소별 운영일·시간", "한파·강설 공지", "연말 교통통제"],
+    sourceLinks: [{ label: "서울특별시 축제 상세", url: "https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=373" }],
+    officialLinks: [{ label: "서울특별시 축제 상세", url: "https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=373" }],
+    eventSchema: { startDate: "2026-12-04", endDate: "2027-01-31", locationName: "광화문광장 외 서울 도심 6곳", locationAddress: "서울특별시 종로구 세종대로 172 외", organizerName: "서울특별시", eventStatus: "https://schema.org/EventScheduled", price: 0, priceCurrency: "KRW", availability: "https://schema.org/InStock", ticketUrl: "https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=373" },
+    body: [
+      "## 하나의 행사장이 아니라 겨울 시즌 묶음",
+      "서울특별시 펀서울은 2026 서울윈터페스타를 12월 4일부터 2027년 1월 31일까지 광화문광장 외 6곳에서 열 예정이라고 소개한다. 서울라이트광화문, 광화문마켓, 제야의 종 타종행사처럼 운영 날짜와 성격이 다른 프로그램을 하나의 겨울 브랜드로 묶은 구조다.",
+      "행사 전체 기간 안에 방문한다고 모든 프로그램을 볼 수 있는 것은 아니다. 빛 전시를 볼 날, 마켓이 열리는 날, 12월 31일 타종행사는 서로 분리해서 확인해야 한다.",
+      "## 하루에 한 권역만 선택한다",
+      "광화문 일대의 빛 전시와 마켓은 도보로 묶기 쉽지만 DDP 등 다른 권역까지 넣으면 이동 시간이 늘어난다. 공식 세부 지도가 나오면 프로그램 두 개와 식사 장소 하나 정도로 하루 계획을 제한한다.",
+      "연말 주말과 크리스마스 전후에는 지하철역 출입과 보행 동선이 평소보다 혼잡하다. 어린이와 방문한다면 광장 한가운데가 아니라 건물 입구나 역 출구처럼 찾기 쉬운 곳을 만남 장소로 정한다.",
+      "## 무료라고 단정할 수 없는 부분",
+      "야외 미디어파사드와 빛 조형물은 자유관람 형태가 많지만, 광화문마켓의 상품과 먹거리, 일부 체험은 구매 비용이 든다. 2026년 프로그램별 가격은 아직 공개 전이므로 전체가 무료라고 표시하지 않는다.",
+      "타종행사는 같은 시즌에 포함돼도 별도의 교통통제와 안전 운영이 적용된다. 12월 31일 방문자는 일반 겨울축제 안내가 아니라 타종행사 전용 공지를 확인해야 한다.",
+      "## 한파가 일정에 미치는 영향",
+      "빛 전시는 해가 진 뒤가 핵심이지만 도심 광장에 오래 서 있으면 체감온도가 빠르게 떨어진다. 실내 휴식 장소와 화장실을 먼저 정하고, 장갑과 보조 배터리를 준비한다. 강설 시 바닥이 미끄럽고 대중교통 이동이 지연될 수 있다.",
+      "## 세부 공지가 나오면 확인할 것",
+      "- 7개 장소별 프로그램과 운영일\n- 미디어아트 상영 시간과 휴연일\n- 마켓 운영 시간·결제 방식\n- 크리스마스·연말 교통통제\n- 한파·강설에 따른 변경 공지",
+      "광화문광장과 청계천, 서울광장처럼 가까워 보이는 장소도 인파와 횡단 대기 때문에 이동 시간이 늘어난다. 미디어아트 상영과 마켓, 타종행사는 운영 주체와 날짜가 다르므로 하나의 티켓이나 공통 시간표가 있다고 가정하지 않는다. 연말 당일은 평소 지하철 운행과 도로 통제가 달라질 수 있어 일반 주말 동선을 그대로 쓰면 안 된다.",
+      "구체적인 프로그램이 발표되면 첫째 방문 장소 하나, 둘째 예약 또는 입장 조건, 셋째 실내 휴식 지점, 넷째 귀가 역을 정한다. 여러 장소를 전부 연결하는 대신 날씨가 나쁘면 한 권역만 남길 수 있도록 대체 일정을 만든다.",
+      "이 글은 2026년 8월 6일 공개된 예정 기간과 대표 프로그램만 사용했다. 구체적인 상영 시간과 장소별 일정이 발표되면 해당 원문을 기준으로 다시 검토한다."
+    ]
   })
 ];
-
-function createGuide(seed: EventGuideSeed): Guide {
-  return {
-    slug: seed.slug,
-    title: seed.title,
-    summary: seed.summary,
-    category: seed.category,
-    updatedAt: eventsReviewDate,
-    readingTime: "6분 읽기",
-    audience: seed.focus,
-    keyChecks: seed.checklist,
-    sourceLinks: [
-      { label: "대한민국 구석구석", url: "https://korean.visitkorea.or.kr/" },
-      { label: "문화포털", url: "https://www.culture.go.kr/" }
-    ],
-    nextReviewAt: eventsNextReviewDate,
-    body: []
-  };
-}
 
 export const extraEventGuides: Guide[] = [
-  createGuide({
-    slug: "event-rain-outdoor-decision",
-    title: "우천 시 야외행사 판단법",
-    summary: "비 예보가 있는 날 야외 행사를 갈지 말지 결정할 때 보는 공식 공지와 대체 기준입니다.",
-    category: "날씨",
-    focus: "우천, 강풍, 폭염 때 방문 여부를 정해야 하는 방문자",
-    checklist: ["주최 측 취소 공지", "실내 대체 프로그램", "우산 반입 가능 여부", "귀가 교통"]
-  }),
-  createGuide({
-    slug: "free-family-event-check",
-    title: "아이와 무료행사 갈 때 확인할 것",
-    summary: "무료입장 행사라도 아이와 함께라면 연령 제한, 체험비, 대기 공간을 먼저 봐야 합니다.",
-    category: "가족",
-    focus: "아이와 비용 부담 낮은 행사를 찾는 보호자",
-    checklist: ["연령 제한", "보호자 동반", "체험 재료비", "화장실과 휴식 공간"]
-  }),
-  createGuide({
-    slug: "exhibition-ticket-compare",
-    title: "전시회 현장권과 사전예매 비교",
-    summary: "전시회 방문 전 현장권, 사전예매, 무료등록의 차이를 비교하는 기준입니다.",
-    category: "예매",
-    focus: "전시장 입장 시간을 안정적으로 잡고 싶은 방문자",
-    checklist: ["마지막 입장", "환불 기한", "QR 티켓", "현장 대기"]
-  }),
-  createGuide({
-    slug: "festival-traffic-control",
-    title: "축제 교통통제 확인법",
-    summary: "대형 축제 전 임시주차장, 셔틀, 보행 통제 구간을 확인하는 순서입니다.",
-    category: "교통",
-    focus: "차량 또는 대중교통으로 대형 축제를 방문하는 사람",
-    checklist: ["임시주차장", "셔틀버스", "보행 통제", "귀가 막차"]
-  }),
-  createGuide({
-    slug: "regional-festival-stay-route",
-    title: "지역 축제 숙박 동선 잡는 법",
-    summary: "지역 축제와 숙박을 함께 잡을 때 행사장 거리, 체크인, 귀가 시간을 맞추는 방법입니다.",
-    category: "여행",
-    focus: "타지역 축제를 1박 일정으로 보려는 방문자",
-    checklist: ["숙소 거리", "체크인 시간", "야간 귀가", "다음 날 이동"]
-  }),
-  createGuide({
-    slug: "free-event-extra-cost",
-    title: "무료입장 행사 추가비용 확인법",
-    summary: "무료입장 행사에서 실제로 돈이 드는 체험, 주차, 보관, 식음료 항목을 분리합니다.",
-    category: "비용",
-    focus: "무료 행사에서 예상 밖 지출을 줄이고 싶은 방문자",
-    checklist: ["체험비", "주차비", "물품 보관", "식음료"]
-  }),
-  createGuide({
-    slug: "night-event-return-plan",
-    title: "야간행사 귀가 계획",
-    summary: "야간 공연과 불꽃축제에서 마지막 프로그램 이후 귀가 시간을 줄이는 기준입니다.",
-    category: "교통",
-    focus: "밤 늦게 끝나는 행사에 가는 방문자",
-    checklist: ["막차 시간", "대체 역", "택시 승차 위치", "동행자 만남 장소"]
-  }),
-  createGuide({
-    slug: "event-cancel-update-source",
-    title: "행사 취소·변경 공지 찾는 법",
-    summary: "행사 당일 취소, 장소 변경, 회차 축소 공지를 어디서 확인해야 하는지 정리합니다.",
-    category: "공식출처",
-    focus: "출발 직전 최신 공지를 확인해야 하는 방문자",
-    checklist: ["공식 홈페이지", "주최 SNS", "예매처 알림", "지자체 공지"]
-  })
-];
-
-function metaFor(item: InfoItem): EventMeta {
-  const defaults = categoryDefaults[item.category] ?? categoryDefaults["축제"];
-  const overrides = slugMeta[item.slug] ?? {};
-
-  return {
-    eventDateStatus: item.eventDateStatus ?? overrides.eventDateStatus ?? defaults.eventDateStatus ?? item.period,
-    venue: item.venue ?? overrides.venue ?? defaults.venue ?? `${item.region} 행사장`,
-    bookingType: item.bookingType ?? overrides.bookingType ?? defaults.bookingType ?? "공식 안내에서 예매 방식 확인",
-    priceNote: item.priceNote ?? overrides.priceNote ?? defaults.priceNote ?? "입장료와 체험비 분리 확인",
-    weatherRisk: item.weatherRisk ?? overrides.weatherRisk ?? defaults.weatherRisk ?? "출발 전 날씨 공지 확인",
-    trafficNote: item.trafficNote ?? overrides.trafficNote ?? defaults.trafficNote ?? "대중교통과 주차 동선 확인",
-    familyFit: item.familyFit ?? overrides.familyFit ?? defaults.familyFit ?? "동행자 기준으로 체류 시간 확인",
-    lastCheckedAt: item.lastCheckedAt ?? eventsReviewDate,
-    officialLinks: item.officialLinks ?? overrides.officialLinks ?? sourceLinks(item),
-    statusBadges: item.statusBadges ?? overrides.statusBadges ?? defaults.statusBadges ?? ["공식확인"],
-    bestFor: item.audience ?? overrides.bestFor ?? defaults.bestFor ?? `${item.region}에서 ${item.category} 일정을 찾는 방문자`,
-    editorNote:
-      item.eventLead ??
-      overrides.editorNote ??
-      `${item.title}은 ${item.region} 지역 ${item.category} 정보라서 날짜보다 예매, 이동, 현장 변수를 함께 보는 편이 안전합니다.`,
-    avoidNote:
-      item.eventCaution ??
-      overrides.avoidNote ??
-      defaults.avoidNote ??
-      "공식 공지 확인 없이 출발하면 입장 방식이나 운영 시간이 달라질 수 있습니다.",
-    sourceCheck:
-      overrides.sourceCheck ??
-      `${item.source} 공식 안내에서 개최일, 장소, 입장 방식, 변경 공지를 다시 확인하세요.`,
-    eventSchema: overrides.eventSchema
-  };
-}
-
-function bodyFor(item: InfoItem, meta: EventMeta) {
-  const sourceLabel = meta.officialLinks.map((link) => link.label).slice(0, 2).join(", ");
-  return [
-    "## 한 줄 판단",
-    `${item.title}은 ${meta.bestFor}에게 먼저 맞는 행사입니다. ${meta.editorNote}`,
-    `${item.region} 지역에서 ${item.category} 일정을 찾을 때는 행사 소개 문구보다 방문 조건을 먼저 보는 편이 안전합니다. 이 글은 홍보성 추천보다 실제로 현장에서 문제가 되는 예매, 비용, 날씨, 교통, 동행자 변수를 순서대로 확인하도록 구성했습니다.`,
-    "## 일정·장소·입장 방식",
-    `${item.title}의 기준 일정은 "${meta.eventDateStatus}"입니다. 장소는 ${meta.venue}로 정리했고, 방문 전에는 ${item.source}에서 장소 세부 표기와 회차별 운영 여부를 다시 확인해야 합니다.`,
-    `${item.title}의 예매 방식은 "${meta.bookingType}"입니다. 사전예매, 현장권, 무료입장, 선착순 접수는 서로 다른 의미라서 같은 행사 안에서도 프로그램별로 나누어 봐야 합니다.`,
-    `공식 공지가 여러 곳에 나뉘어 있다면 먼저 행사명과 날짜가 같은지 확인하고, 그다음 예매처 화면의 회차와 행사장 안내의 입장 시간을 대조하세요. 포털형 목록에는 아직 예전 회차가 남아 있는 경우가 있어 제목만 보고 판단하면 헷갈릴 수 있습니다.`,
-    "## 방문 적합 대상",
-    `${item.title}은 ${meta.bestFor}에게 적합하지만, 모든 방문자에게 같은 만족도를 주는 행사는 아닙니다. 짧게 둘러볼 사람, 아이와 함께 움직이는 가족, 전시 관람 시간을 충분히 잡으려는 사람, 야간 귀가를 걱정하는 사람은 확인해야 할 기준이 다릅니다.`,
-    `동행자가 있다면 출발 전에 관람 목적을 하나로 맞추는 편이 좋습니다. ${item.category} 행사는 현장에 도착한 뒤 각자 보고 싶은 구역이 갈리면 이동 시간이 늘어나고, 예약 회차나 마지막 입장 시간을 놓치기 쉽습니다.`,
-    "## 비용과 무료 범위",
-    `${item.title}의 비용 확인 포인트는 "${meta.priceNote}"입니다. 무료라고 적힌 행사는 입장료만 무료인 경우가 있어 체험 재료비, 주차비, 물품 보관료, 식음료 비용을 별도로 계산하는 편이 안전합니다.`,
-    `무료 행사라면 무료의 범위를 문장 그대로 읽어야 합니다. 무료입장은 행사장에 들어가는 비용이 없다는 뜻일 수 있고, 체험 부스·특별전·좌석 예약·기념품·주차는 별도일 수 있습니다. 유료 행사라면 취소 수수료와 환불 마감도 예매 전 확인하세요.`,
-    `가족이나 단체로 움직이면 1인당 금액보다 부대비용이 더 커질 수 있습니다. ${meta.venue} 주변의 식사, 이동, 보관, 주차 비용까지 예상하면 현장에서 결정을 서두르지 않아도 됩니다.`,
-    "## 날씨와 현장 변수",
-    `${item.region} 지역 ${item.category} 행사는 날씨와 현장 공지의 영향을 받습니다. 이 글에서 우선 보는 변수는 "${meta.weatherRisk}"이며, 출발 직전 공식 공지에 취소·축소·장소 변경 안내가 없는지 확인해야 합니다.`,
-    `${meta.avoidNote} 특히 동행자가 있거나 장거리 이동이라면 행사 하나만 보고 출발하지 말고, 주변 실내 대안 또는 짧게 머무를 대체 장소를 함께 정해 두세요.`,
-    `우천 공지는 행사 전날 밤보다 당일 오전에 바뀌는 경우가 있습니다. 야외 무대, 푸드존, 체험 부스, 퍼레이드처럼 야외 비중이 큰 프로그램은 전체 행사 개최 여부와 별개로 개별 취소가 생길 수 있습니다.`,
-    `폭염과 강풍도 비만큼 중요합니다. 그늘이 적거나 대기 줄이 긴 행사는 실제 체류 시간이 짧아질 수 있으므로 물, 모자, 보조 배터리, 아이 동반 시 휴식 지점을 미리 준비하는 편이 좋습니다.`,
-    "## 교통과 귀가 동선",
-    `${item.title} 방문 전 교통 메모는 "${meta.trafficNote}"입니다. 행사장에 갈 때보다 끝난 뒤 이동이 더 어려운 경우가 많으므로 마지막 프로그램을 볼지, 한 회차 일찍 이동할지를 미리 정하는 편이 좋습니다.`,
-    `차량으로 이동한다면 행사장 바로 앞 주차장만 보지 말고 만차 이후의 대체 주차장과 도보 거리를 함께 확인하세요. 대중교통을 이용한다면 가장 가까운 역보다 행사 종료 후 사람이 분산되는 역이 더 편할 수 있습니다.`,
-    `야간 행사라면 막차 시간, 택시 승차 지점, 동행자 만남 장소를 미리 정해 두세요. 현장에서는 통신이 느려지거나 길이 통제되어 지도 앱의 안내가 실제 동선과 다를 수 있습니다.`,
-    "## 아이·가족 동반 기준",
-    `${item.title}의 가족 방문 기준은 "${meta.familyFit}"입니다. 아이와 함께라면 행사 내용보다 화장실, 휴식 공간, 그늘, 유모차 이동, 대기 줄을 먼저 보는 편이 실제 만족도에 더 크게 작동합니다.`,
-    `아이 동반 방문자는 체험 난이도와 연령 제한을 먼저 확인해야 합니다. 보호자 동반이 필요한 회차인지, 재입장이 가능한지, 소리가 큰 공연이나 긴 대기 줄이 있는지도 가족 만족도에 영향을 줍니다.`,
-    `부모님과 함께 가는 경우에는 계단, 보행 거리, 앉을 곳, 화장실 위치가 더 중요합니다. ${item.title}처럼 행사장이 넓거나 관람 구역이 나뉘는 일정은 모든 프로그램을 보려고 하기보다 핵심 구역을 줄이는 편이 현실적입니다.`,
-    "## 방문 전날 체크 순서",
-    [
-      `- ${item.source}에서 행사명과 날짜가 같은 공지인지 확인합니다.`,
-      `- ${meta.bookingType} 조건을 보고 예약, 현장권, 무료입장 중 어떤 방식인지 표시합니다.`,
-      `- ${meta.priceNote} 항목을 기준으로 입장료와 추가 비용을 나눕니다.`,
-      `- ${meta.weatherRisk} 관련 공지가 올라왔는지 확인합니다.`,
-      `- ${meta.trafficNote}에 맞춰 도착 시간과 귀가 시간을 정합니다.`
-    ].join("\n"),
-    "## 보완 사례",
-    `${item.title}을 볼 때 가장 흔한 실수는 “행사가 열린다”는 사실만 확인하고 방문 조건을 건너뛰는 것입니다. 예를 들어 무료 공연이라도 좌석이 선착순이면 도착 시간이 결과를 바꾸고, 전시회라면 마지막 입장 시간이 관람 가능 시간을 결정합니다.`,
-    `또 다른 실수는 공식 출처 하나만 보고 끝내는 것입니다. 주최 측 공지에는 전체 일정이 있고, 예매처에는 회차와 마감 상태가 있으며, 행사장 공지에는 주차와 입장 동선이 따로 올라오는 경우가 있습니다. 세 곳의 정보가 어긋나면 가장 최근 공지를 우선 확인하세요.`,
-    "## 이런 경우에는 방문을 미루는 편이 낫습니다",
-    `${meta.bookingType} 조건이 명확하지 않거나, ${meta.weatherRisk} 공지가 행사 직전까지 불안정하거나, ${meta.trafficNote} 때문에 귀가 시간이 지나치게 길어진다면 방문을 미루는 선택도 필요합니다. 특히 아이나 고령자와 함께라면 행사 자체보다 안전한 이동이 우선입니다.`,
-    `공식 공지에서 취소·변경 안내가 불명확한데 현장까지 거리가 멀다면 전화 문의나 예매처 알림을 한 번 더 확인하세요. 검색 결과의 짧은 요약만 믿고 움직이면 이미 마감된 회차나 변경 전 장소로 이동할 수 있습니다.`,
-    "## 현장 도착 후 확인할 것",
-    `${item.title} 현장에 도착했다면 먼저 안내판, 입구 동선, 회차별 대기 줄을 확인하세요. 온라인에서 본 정보와 현장 운영이 달라질 수 있고, 특히 ${item.category} 행사는 안전 통제나 인파 분산 때문에 입구가 바뀌는 일이 있습니다.`,
-    `입장 후에는 전체 프로그램을 다 보려고 하기보다 먼저 보고 싶은 구역을 두세 곳으로 줄이는 편이 좋습니다. ${meta.venue} 안에서 이동 거리가 길어지면 예매한 회차를 놓치거나 귀가 시간이 밀릴 수 있습니다.`,
-    "## 함께 비교하면 좋은 대안",
-    `${item.title}만 단독으로 보기보다 같은 ${item.region} 지역의 실내 공간, 무료 전시, 짧은 산책 코스를 함께 비교해 두면 일정이 흔들릴 때 대응하기 쉽습니다. 야외 행사는 날씨가, 실내 전시는 입장 마감과 대기 줄이 변수가 되므로 성격이 다른 대안을 하나씩 준비해 두세요.`,
-    `대안 장소를 고를 때는 유명도보다 이동 시간이 중요합니다. 행사장 주변 10~20분 거리에서 갈 수 있는 곳을 골라야 실제로 쓸 수 있는 대안이 됩니다. 멀리 떨어진 후보는 계획표에는 좋아 보여도 당일에는 이동 부담이 커질 수 있습니다.`,
-    "## 방문 후 기록해 둘 내용",
-    `${item.title}을 실제로 방문했다면 예매 방식, 도착 시간, 혼잡했던 구간, 추가 비용, 귀가 동선을 짧게 기록해 두세요. 다음에 비슷한 ${item.category} 행사를 고를 때 같은 실수를 줄일 수 있고, 가족이나 지인에게 설명할 때도 더 정확한 기준이 됩니다.`,
-    `특히 무료 행사에서는 실제로 무료였던 범위와 현장에서 돈이 든 항목을 나눠 적어 두면 좋습니다. 전시나 체험 행사는 마지막 입장 시간과 회차 대기 시간을 기록해 두면 다음 방문 계획을 세울 때 도움이 됩니다.`,
-    "## 공식 출처 확인",
-    `${item.title}은 ${sourceLabel} 기준으로 다시 확인할 수 있습니다. 이 페이지의 확인일은 ${meta.lastCheckedAt}이며, 다음 점검 전이라도 주최 측 공지가 바뀌면 실제 운영 조건이 달라질 수 있습니다.`,
-    `출발 전 마지막으로 ${item.source}에서 "${item.title}", "${item.region}", "${item.category}" 키워드를 함께 확인하세요. 검색 결과 요약보다 공식 페이지의 공지, 예매 화면, 첨부 안내가 우선입니다.`,
-    "## 최종 정리",
-    `${item.title}은 ${item.region}에서 ${item.category} 일정을 찾는 방문자에게 검토할 만한 선택지입니다. 다만 방문 만족도는 행사명보다 ${meta.bookingType}, ${meta.priceNote}, ${meta.weatherRisk}, ${meta.trafficNote}을 얼마나 미리 확인했는지에 따라 달라집니다.`
-  ];
-}
-
-function faqFor(item: InfoItem, meta: EventMeta) {
-  return [
-    {
-      question: `${item.title}은 당일 바로 가도 괜찮나요?`,
-      answer: `${meta.bookingType} 기준을 먼저 봐야 합니다. 자유 관람처럼 보여도 일부 프로그램은 사전 신청이나 선착순 마감이 있을 수 있습니다.`
-    },
-    {
-      question: `${item.title}이 무료 행사인지 어떻게 확인하나요?`,
-      answer: `${meta.priceNote} 항목을 공식 안내에서 다시 확인하세요. 입장 무료와 체험 무료는 다른 의미일 수 있습니다.`
-    },
-    {
-      question: `비가 오면 ${item.title} 일정이 바뀔 수 있나요?`,
-      answer: `${meta.weatherRisk} 조건 때문에 변경될 수 있습니다. 출발 직전 주최 측 홈페이지와 예매처 알림을 함께 확인하는 편이 안전합니다.`
-    },
-    {
-      question: `${item.title}에 아이와 함께 가도 괜찮나요?`,
-      answer: `${meta.familyFit} 기준을 먼저 확인하세요. 체험 회차, 대기 공간, 화장실, 유모차 이동 가능 여부가 실제 방문 만족도에 영향을 줍니다.`
-    },
-    {
-      question: `${item.title} 방문 전 공식 출처는 어디를 보면 되나요?`,
-      answer: `${meta.officialLinks.map((link) => link.label).slice(0, 2).join(", ")}를 먼저 확인하는 편이 좋습니다. 일정과 예매, 교통 안내가 서로 다른 페이지에 나뉘어 있을 수 있습니다.`
-    }
-  ];
-}
-
-export function enhanceEventItem(item: InfoItem): InfoItem {
-  const meta = metaFor(item);
-  const summary = `"${item.title}"은 ${meta.bookingType}이 핵심입니다. ${item.region} 방문 전 ${meta.trafficNote}와 ${meta.weatherRisk}을 같이 확인하세요.`;
-
-  return {
-    ...item,
-    summary,
-    period: meta.eventDateStatus,
-    updatedAt: eventsReviewDate,
-    nextReviewAt: eventsNextReviewDate,
-    readingTime: item.readingTime ?? "6분 읽기",
-    audience: meta.bestFor,
-    keyChecks: [meta.bookingType, meta.priceNote, meta.weatherRisk, meta.trafficNote],
-    sourceLinks: meta.officialLinks,
-    details: {
-      "장소": meta.venue,
-      "일정 상태": meta.eventDateStatus,
-      "예매·입장": meta.bookingType,
-      "비용 범위": meta.priceNote,
-      "날씨 변수": meta.weatherRisk,
-      "교통 메모": meta.trafficNote
-    },
-    body: bodyFor(item, meta),
-    faq: faqFor(item, meta),
-    ...meta
-  };
-}
-
-function guideBody(seed: EventGuideSeed) {
-  return [
-    "## 먼저 판단할 것",
-    `${seed.title}은 ${seed.focus}를 위한 방문 기준입니다. 행사는 제목만 보고 고르면 실제 현장에서 대기, 비용, 이동 문제가 생기기 쉬워서 출발 전 확인 순서를 분리해 두는 편이 좋습니다.`,
-    "## 공식 공지부터 보는 이유",
-    `행사 정보는 블로그 후기보다 공식 공지의 변경 속도가 더 중요합니다. ${seed.title}을 적용할 때는 주최 측 홈페이지, 예매처 알림, 지자체 문화관광 공지를 먼저 보고 개인 후기는 분위기 확인용으로만 참고하세요.`,
-    "## 현장에서 자주 막히는 부분",
-    `${seed.summary} 특히 같은 행사라도 날짜, 회차, 날씨, 동행자에 따라 확인해야 할 항목이 달라집니다. 전날 저장한 정보가 당일 오전에 바뀔 수 있으므로 출발 직전 한 번 더 확인하는 루틴이 필요합니다.`,
-    "## 체크리스트",
-    seed.checklist.map((item) => `- ${item}을 확인했습니다.`).join("\n"),
-    "## 기록해 둘 내용",
-    `${seed.title}을 실제 일정에 적용했다면 행사명, 방문일, 예매 여부, 주차 또는 대중교통 경로, 취소 공지 확인 채널을 한 줄로 저장해 두세요. 다음에 비슷한 행사를 고를 때 같은 실수를 줄일 수 있습니다.`
-  ];
-}
-
-export function enhanceEventGuide(guide: Guide): Guide {
-  const summary = `${guide.title}: ${guide.category} 상황에서 공식 공지, 예매 방식, 현장 변수를 어떤 순서로 볼지 정리한 방문 기준입니다.`;
-  const eventBody = guideBody({
-    slug: guide.slug,
-    title: guide.title,
-    summary,
-    category: guide.category,
-    focus: guide.audience ?? `${guide.category} 기준이 필요한 행사 방문자`,
-    checklist: guide.keyChecks ?? ["공식 공지", "예매 방식", "현장 변수", "귀가 동선"]
-  });
-
-  return {
-    ...guide,
-    summary,
-    updatedAt: eventsReviewDate,
-    nextReviewAt: eventsNextReviewDate,
-    readingTime: guide.readingTime ?? "6분 읽기",
-    audience: guide.audience ?? `${guide.category} 기준이 필요한 행사 방문자`,
-    keyChecks: guide.keyChecks ?? ["공식 공지", "예매 방식", "현장 변수", "귀가 동선"],
-    sourceLinks: guide.sourceLinks ?? [
-      { label: "대한민국 구석구석", url: "https://korean.visitkorea.or.kr/" },
-      { label: "문화포털", url: "https://www.culture.go.kr/" }
+  {
+    slug: "rainy-outdoor-event-decision",
+    title: "비 예보가 있는 야외행사, 취소 여부를 판단하는 순서",
+    summary: "강수 확률 하나가 아니라 주최 공지, 프로그램별 운영, 이동 위험과 실내 대안을 차례로 확인합니다.",
+    category: "우천 대응",
+    updatedAt: "2026-08-06T16:14:00+09:00",
+    readingTime: "7분",
+    audience: "비 예보 때문에 야외 축제 방문 여부를 결정해야 하는 사람",
+    keyChecks: ["주최 측 최신 공지", "프로그램별 취소", "교통·지면 위험", "환불과 대안"],
+    sourceLinks: [
+      { label: "기상청 날씨누리", url: "https://www.weather.go.kr/" },
+      { label: "서울특별시 펀서울", url: "https://festival.seoul.go.kr/" }
     ],
-    body: [...eventBody, ...guide.body]
-  };
-}
+    body: [
+      "## 날씨 앱보다 먼저 저장할 주소",
+      "야외행사 페이지를 발견하면 포스터보다 주최 측 공지사항 주소를 먼저 저장한다. 비가 올 때 전체 개최 여부는 주최자가 결정하고, 날씨 앱은 그 결정을 알려주지 않는다. 공식 홈페이지, 예매처 알림, 행사장 운영기관 공지 중 어디에 변경 안내가 올라오는지 확인한다.",
+      "## 전체 취소와 일부 취소를 나눈다",
+      "축제는 열린다고 해도 불꽃쇼, 퍼레이드, 야외 체험, 푸드존 중 일부가 빠질 수 있다. 자신이 가려는 이유가 취소된 프로그램이라면 전체 개최 문구는 의미가 없다. 방문 목적을 한 문장으로 적고 그 프로그램의 운영 여부를 확인한다.",
+      "## 강수량 외에 볼 것",
+      "해변과 공원 행사는 강풍, 낙뢰, 폭염, 지면 상태가 중요하다. 비가 그친 뒤에도 잔디가 젖어 좌석이나 유모차 이동이 어려울 수 있다. 야간에는 젖은 옷과 바람 때문에 체온이 빠르게 떨어진다.",
+      "## 예매권이 있다면",
+      "행사 취소와 개인 변심은 환불 조건이 다르다. 주최 취소 공지가 나오기 전에 본인이 취소하면 수수료가 발생할 수 있다. 환불 마감, 우천 진행 문구, 일정 변경 시 티켓 처리 방식을 예매처에서 확인한다.",
+      "## 출발 결정을 내리는 세 시점",
+      "- 전날 밤: 전체 기상과 대체 프로그램을 확인한다.\n- 당일 아침: 주최 측 취소·축소 공지를 확인한다.\n- 출발 직전: 교통통제, 낙뢰·호우 특보와 개별 프로그램 공지를 본다.",
+      "비가 그쳤더라도 잔디와 흙바닥의 배수 상태, 강풍, 낙뢰 예보 때문에 일부 시설은 계속 닫힐 수 있다. 반대로 비가 내리더라도 실내 프로그램은 정상 운영할 수 있다. 행사 전체 이름 옆의 날씨 아이콘 하나로 결정하지 말고, 내가 방문할 시간대와 프로그램 이름이 들어간 최신 공지를 찾아야 한다.",
+      "대체 일정은 행사장 근처 실내 공간 한 곳과 취소 가능한 식사 예약 정도로 단순하게 만든다. 환불 기한이 있는 티켓이라면 날씨 판단 시점보다 환불 마감이 빠른지 먼저 확인한다.",
+      "취소 공지가 없다고 안전이 보장되는 것은 아니다. 어린이·고령자 동행, 장거리 이동, 야간 귀가가 겹치면 기준을 더 보수적으로 잡는다. 대안은 행사장에서 20분 안에 갈 수 있는 실내 장소여야 실제로 사용할 수 있다."
+    ]
+  },
+  {
+    slug: "free-event-real-cost",
+    title: "무료입장 행사에서 실제 지출을 계산하는 방법",
+    summary: "입장료, 예약 수수료, 체험 재료비, 주차와 식음료를 구분해 무료의 범위를 정확히 읽습니다.",
+    category: "비용 확인",
+    updatedAt: "2026-08-06T16:29:00+09:00",
+    readingTime: "6분",
+    audience: "가족·일행의 무료 행사 총비용을 미리 알고 싶은 방문자",
+    keyChecks: ["무료의 적용 범위", "유료 체험", "교통·주차", "현장 결제"],
+    sourceLinks: [{ label: "서울특별시 펀서울", url: "https://festival.seoul.go.kr/" }],
+    body: [
+      "## 무료라는 단어의 대상을 찾는다",
+      "'무료입장'은 행사장에 들어가는 비용이 없다는 뜻일 수 있다. 전시, 공연 좌석, 체험 재료, 물품 보관과 주차까지 무료라는 의미는 아니다. 문장에서 무료 바로 뒤에 붙은 대상을 확인한다.",
+      "## 네 칸으로 비용을 나눈다",
+      "입장·예매, 체험·좌석, 이동·주차, 식음·구매 네 칸을 만든다. 가족 행사라면 1인 비용과 가족 전체 비용을 따로 계산한다. 재료비가 5천원이어도 세 명이 참여하면 1만5천원이고 주차와 식사가 더해진다.",
+      "## 무료이지만 예약이 필요한 경우",
+      "비용이 없어도 정원제 프로그램은 예약번호나 입장팔찌가 필요하다. 노쇼 기준과 현장접수 비율을 확인한다. 예약을 못 했을 때 자유관람 구역만으로 방문할 가치가 있는지도 미리 판단한다.",
+      "## 주차비가 가장 큰 변수가 되기도 한다",
+      "도심 무료행사는 인근 민영주차장을 이용하면 입장료보다 주차비가 커질 수 있다. 공식 교통 안내에서 대중교통, 공영주차장, 행사 통제 구역을 확인한다. 무료 주차라는 블로그 글은 적용 시간과 최신성을 다시 검증한다.",
+      "## 현장에서 결제하기 전에",
+      "- 체험 가격표와 포함 물품을 확인한다.\n- 카드·간편결제·현금 중 가능한 수단을 본다.\n- 환불이나 회차 변경이 가능한지 묻는다.\n- 무료 증정품을 받기 위한 개인정보 제공 조건을 확인한다.",
+      "가족 단위라면 사람별 예상액보다 차량 한 대의 주차비, 함께 먹는 식사, 어린이만 참여하는 체험처럼 결제 단위를 나눈다. 무료 프로그램에 참여하기 위해 유료 물품을 반드시 사야 하는지도 확인한다. 필수 구매가 없다면 현장 판매 문구를 입장 조건으로 오해하지 않는다.",
+      "예산을 넘었을 때 가장 먼저 포기할 항목을 정해 두면 현장에서 여러 번 결정을 바꾸지 않아도 된다. 공식 요금표가 없으면 과거 후기의 가격을 현재 가격으로 사용하지 않는다.",
+      "무료 행사의 가치는 돈을 전혀 쓰지 않는 데만 있지 않다. 어떤 항목이 무료이고 무엇을 선택해서 지출하는지 알고 가면 현장에서 불필요한 결정을 줄일 수 있다."
+    ]
+  },
+  {
+    slug: "advance-booking-vs-door-ticket",
+    title: "사전예매와 현장권을 비교할 때 가격보다 먼저 볼 것",
+    summary: "매진, 입장 회차, 노쇼 전환, 마지막 입장을 기준으로 두 방식의 실제 차이를 비교합니다.",
+    category: "예매",
+    updatedAt: "2026-08-06T16:44:00+09:00",
+    readingTime: "6분",
+    audience: "전시·공연·체험의 사전예매와 현장접수 사이에서 고민하는 방문자",
+    keyChecks: ["현장권 존재 여부", "회차와 정원", "노쇼 규정", "취소 수수료"],
+    sourceLinks: [{ label: "한국문화예술위원회 공연장", url: "https://theater.arko.or.kr/" }],
+    body: [
+      "## 현장권이 있다는 말과 남아 있다는 말은 다르다",
+      "운영 규정에 현장권 판매가 적혀 있어도 당일 수량이 남는다는 보장은 없다. 현장 판매 시작 시각, 1인 구매 제한, 매진 공지 채널을 확인해야 한다. 인기 회차는 문을 열기 전 대기가 생길 수 있다.",
+      "## 회차가 있는 행사",
+      "물놀이, 체험, 전시는 입장 시각이 정해질 수 있다. 사전예매는 시간을 확보하는 대신 늦으면 노쇼 처리될 수 있고, 현장권은 일정이 자유로운 대신 원하는 회차를 고르기 어렵다. 이동 시간이 불확실한 사람은 취소 가능한 예매권이 있는지 본다.",
+      "## 가격이 같아도 조건은 다르다",
+      "온라인 예매 수수료, 현장 할인, 증빙 할인, 환불 마감이 서로 다를 수 있다. 할인권은 당일 증빙을 제출하지 못하면 차액을 내거나 입장이 거절될 수 있다.",
+      "## 동행자가 있을 때",
+      "좌석 공연은 연속 좌석이 필요한지, 체험은 일행 전원이 같은 회차에 들어가야 하는지 확인한다. 한 사람이 대표 예매했을 때 각자 입장이 가능한지도 중요하다.",
+      "## 선택 기준",
+      "- 매진되면 방문 목적이 사라진다: 사전예매\n- 날씨와 이동 때문에 날짜를 확정하기 어렵다: 환불 조건을 본 뒤 결정\n- 자유관람만 해도 괜찮다: 현장 상황 확인\n- 아이 체험이 핵심이다: 같은 회차 정원을 먼저 확보",
+      "현장권을 선택했다면 판매 시작 전에 도착하는 데 드는 대기 비용도 포함해야 한다. 사전예매를 선택했다면 취소 마감과 지연 입장 규정이 그 대가다. 무엇이 더 싸다는 결론보다 매진됐을 때 방문 목적이 남는지와 늦었을 때 대안이 있는지를 비교해야 한다.",
+      "결제 직후에는 주문 내역에 적힌 행사명, 도시, 날짜, 회차, 인원, 좌석을 다시 읽고 캘린더에 저장한다. 동행자에게는 홍보 포스터가 아니라 실제 예매 내역을 공유한다.",
+      "예매 화면을 닫기 전에 행사명, 날짜, 장소, 회차를 다시 읽는다. 이름이 비슷한 과거 회차나 다른 도시의 행사를 결제하는 실수를 막는 가장 짧은 절차다."
+    ]
+  },
+  {
+    slug: "festival-traffic-control-route",
+    title: "축제 교통통제 지도를 실제 귀가 계획으로 바꾸는 법",
+    summary: "통제 구간만 보는 대신 역 출입, 버스 우회, 택시 승차와 종료 후 인파를 함께 계산합니다.",
+    category: "교통",
+    updatedAt: "2026-08-06T16:59:00+09:00",
+    readingTime: "7분",
+    audience: "불꽃축제·도심 행사의 대규모 교통통제를 준비하는 방문자",
+    keyChecks: ["통제 시작·해제", "역 출입 제한", "버스 우회", "귀가 분산"],
+    sourceLinks: [
+      { label: "서울교통정보센터 TOPIS", url: "https://topis.seoul.go.kr/" },
+      { label: "부산교통정보서비스", url: "https://its.busan.go.kr/" }
+    ],
+    body: [
+      "## 통제 시작 시각이 행사 시작보다 빠르다",
+      "무대 설치와 안전 펜스 때문에 도로는 행사 몇 시간 전부터 막힐 수 있다. 차량으로 가까이 갔다가 우회하면 예약 회차를 놓친다. 공식 교통통제 지도에서 날짜, 시작 시각, 해제 예정 시각을 먼저 읽는다.",
+      "## 가장 가까운 역을 고집하지 않는다",
+      "대형 불꽃축제나 걷기 행사에서는 특정 지하철역 출입구가 닫히거나 무정차 통과가 검토될 수 있다. 도보 15분 더 걷더라도 다른 역을 이용하는 편이 빠를 수 있다. 일행의 귀가 방향에 따라 역을 나눈다.",
+      "## 버스는 정류장 위치가 바뀐다",
+      "도로가 통제되면 버스가 우회하고 임시 정류장에 선다. 평소 지도 앱 경로가 그대로 유지된다고 생각하지 않는다. 행사 당일 교통기관 공지에서 우회 노선과 임시 정류장을 확인한다.",
+      "## 택시는 통제선 밖에서",
+      "행사장 바로 앞 호출은 기사와 만나기 어렵다. 통제선 바깥의 큰 건물이나 교차로를 승차 지점으로 정하고, 일행 모두 같은 지명과 주소를 공유한다. 인파가 많은 곳에서는 호출료와 대기 시간도 늘 수 있다.",
+      "## 귀가 계획표",
+      "- 1순위 역과 대체 역을 저장한다.\n- 통제 해제 전까지 운행하지 않는 버스 노선을 표시한다.\n- 택시 승차 지점을 통제선 밖 주소로 정한다.\n- 마지막 프로그램을 끝까지 볼지 10분 일찍 나올지 합의한다.",
+      "통제 지도는 보통 차량 기준으로 그려져 있어 보행자가 건널 수 있는 지점까지 보여주지 않을 수 있다. 행사장 입구, 보행 전용 통로, 역 출입구 폐쇄 공지를 별도로 확인한다. 귀가 방향이 다른 일행은 한 역까지 함께 움직이기보다 행사장 안의 명확한 지점에서 작별하는 편이 안전할 수 있다.",
+      "통제 해제 시각은 현장 안전 상황에 따라 늦어질 수 있다. 자가용을 멀리 주차했다면 주차장 영업 종료와 출차 경로도 통제 시간표와 함께 확인한다.",
+      "교통 계획의 목표는 행사장에 가장 가까이 가는 것이 아니라, 끝난 뒤 안전하게 빠져나오는 것이다. 공식 통제 공지가 아직 없으면 계획도 확정하지 않는다."
+    ]
+  },
+  {
+    slug: "family-event-waiting-plan",
+    title: "아이와 행사에 갈 때 대기 시간을 줄이는 일정표",
+    summary: "연령 제한, 회차, 화장실, 식사와 휴식 지점을 행사 콘텐츠보다 먼저 배치합니다.",
+    category: "가족 방문",
+    updatedAt: "2026-08-06T17:14:00+09:00",
+    readingTime: "6분",
+    audience: "유아·초등학생과 축제·체험 행사에 가는 보호자",
+    keyChecks: ["연령·보호자 기준", "회차 대기", "화장실·휴식", "중도 이탈"],
+    sourceLinks: [{ label: "서울특별시 펀서울", url: "https://festival.seoul.go.kr/" }],
+    body: [
+      "## 아이가 보고 싶어 하는 것보다 못 기다리는 시간을 안다",
+      "같은 나이라도 줄을 서는 시간, 더위, 큰 소리에 대한 반응은 다르다. 보호자는 인기 프로그램 수보다 아이가 감당할 수 있는 대기 시간을 먼저 정해야 한다.",
+      "## 연령 제한 문구를 구체적으로 읽는다",
+      "'가족 참여 가능'은 모든 연령이 체험할 수 있다는 뜻이 아니다. 만 나이, 키 제한, 보호자 동반, 어린이 네 명당 보호자 한 명처럼 세부 기준을 확인한다. 형제자매의 나이가 다르면 같은 회차에 들어갈 수 있는지도 본다.",
+      "## 식사와 화장실을 회차 사이에 둔다",
+      "예약 회차 직전에 식사나 화장실을 넣으면 입장 마감에 늦기 쉽다. 행사장 지도에서 화장실과 휴식 공간을 먼저 표시하고, 체험 사이에 30분 이상 빈 시간을 둔다.",
+      "## 유모차가 항상 편한 것은 아니다",
+      "잔디, 모래, 계단, 인파가 많은 행사에서는 유모차가 이동을 늦출 수 있다. 보관 장소가 있는지, 반입이 가능한지, 우회 경로가 있는지 확인한다. 야간 행사에서는 유모차에 반사 표시나 작은 조명을 달아 시야를 확보한다.",
+      "## 중간에 포기할 계획도 만든다",
+      "- 아이가 힘들어하면 건너뛸 프로그램을 정한다.\n- 행사장에서 가장 가까운 실내 휴식 장소를 저장한다.\n- 일행이 나뉠 때 다시 만날 위치를 정한다.\n- 귀가 교통이 붐비기 전 나갈 시각을 정한다.",
+      "보호자가 두 명 이상이면 줄을 서는 사람과 아이와 쉬는 사람의 역할을 정하되, 대표자 한 명만 줄을 서도 되는지 현장 규칙을 확인한다. 아이만 먼저 보내거나 자리를 대신 맡는 행동은 안전요원의 안내와 충돌할 수 있다. 아이에게 길을 잃었을 때 찾을 운영 부스와 보호자 연락 방법을 알려 준다.",
+      "행사장 안에서 살 수 있다고 가정하지 말고 평소 먹는 물과 간단한 간식의 반입 규정을 확인한다. 소음에 민감한 아이는 귀 보호 장비와 조용한 퇴장 경로를 준비한다.",
+      "아이와 가는 행사의 성공 기준은 많이 보는 것이 아니다. 한두 프로그램을 무리 없이 보고 돌아오는 일정이 다음 방문에도 도움이 된다."
+    ]
+  },
+  {
+    slug: "night-event-return-home",
+    title: "야간행사에서 막차보다 먼저 확인할 귀가 변수",
+    summary: "종료 인파, 역사 입장 통제, 택시 승차 지점과 일행 분산을 포함한 현실적인 귀가 계획입니다.",
+    category: "야간 귀가",
+    updatedAt: "2026-08-06T17:29:00+09:00",
+    readingTime: "6분",
+    audience: "불꽃·빛·야간 공연을 끝까지 보고 대중교통으로 돌아가려는 방문자",
+    keyChecks: ["실제 종료 시각", "역 입장 대기", "대체 노선", "일행 만남"],
+    sourceLinks: [
+      { label: "서울교통공사", url: "https://www.seoulmetro.co.kr/" },
+      { label: "부산교통공사", url: "https://www.humetro.busan.kr/" }
+    ],
+    body: [
+      "## 공식 종료 시각과 내가 움직이는 시각",
+      "공연이 22시에 끝나도 행사장을 빠져나오는 데 30분 이상 걸릴 수 있다. 앙코르, 퇴장 안내, 화장실과 물품 수령 시간을 더한다. 막차가 23시라는 정보만으로 충분하지 않다.",
+      "## 역 입구까지의 대기",
+      "대규모 행사에서는 역이 보여도 입구에서 줄을 설 수 있다. 안전을 위해 일부 출입구가 닫히거나 승강장 진입을 조절한다. 가까운 역과 한 정거장 떨어진 역의 도보 시간을 비교한다.",
+      "## 휴대전화가 느려질 때",
+      "인파가 몰리면 메시지 전송과 택시 호출이 늦어질 수 있다. 일행과 헤어졌을 때 만날 장소와 기다릴 시간을 미리 정한다. 지도와 예매번호, 숙소 주소는 화면 캡처로 저장한다.",
+      "## 술을 마신 일행이 있다면",
+      "운전자는 한 잔도 마시지 않는 원칙을 세우고, 대리운전이 통제 구역 안으로 들어오지 못할 가능성을 고려한다. 가장 단순한 방법은 처음부터 차량을 두고 대중교통을 이용하는 것이다.",
+      "## 마지막 프로그램을 포기할 기준",
+      "- 환승이 두 번 이상 남았다.\n- 어린이·고령자가 피로해한다.\n- 강설·호우로 이동 속도가 느리다.\n- 역사 입장 통제가 시작됐다.",
+      "막차 시간은 역에 도착하는 시간이 아니라 승강장에 들어가 열차를 타는 기준으로 계산한다. 대형 행사에서는 역사 입구에서 승강장까지 평소보다 오래 걸리고, 안전 통제로 다음 열차를 보내야 할 수 있다. 한 노선이 막혔을 때 이용할 심야버스나 다른 역의 마지막 환승 시간도 저장한다.",
+      "숙소나 집 주소는 문자와 화면 캡처 두 방식으로 일행에게 공유한다. 휴대전화 배터리가 부족해지면 사진 촬영보다 귀가 정보와 연락 수단을 우선한다.",
+      "야간행사를 끝까지 보는 것이 목표라도 귀가 실패 비용은 크다. 10분 먼저 이동해 인파를 피하는 선택을 일정에 포함한다."
+    ]
+  },
+  {
+    slug: "multi-venue-art-route",
+    title: "여러 전시장이 참여하는 아트위크 동선 짜기",
+    summary: "유명 공간을 나열하지 않고 하나의 권역, 핵심 프로그램, 마지막 입장을 기준으로 하루를 구성합니다.",
+    category: "전시 동선",
+    updatedAt: "2026-08-06T17:44:00+09:00",
+    readingTime: "7분",
+    audience: "아트위크·갤러리 나이트처럼 여러 공간을 순회하는 관람객",
+    keyChecks: ["권역 선택", "휴관·마지막 입장", "예약 프로그램", "이동 시간"],
+    sourceLinks: [{ label: "서울아트위크", url: "https://seoulartweek.co.kr/" }],
+    body: [
+      "## 목록을 지도에 옮기기 전에 한 곳을 고정한다",
+      "가장 보고 싶은 전시나 토크 하나를 시간표의 기준점으로 잡는다. 그다음 도보 20분 또는 대중교통 한 번으로 갈 수 있는 공간만 후보에 남긴다. 유명하다는 이유로 반대편 권역을 넣지 않는다.",
+      "## 운영 시간을 공간별로 기록한다",
+      "아트위크 대표 기간과 개별 갤러리 운영일은 다를 수 있다. 미술관 휴관일, 갤러리 브레이크타임, 마지막 입장을 각 공식 페이지에서 확인한다. 지도 앱의 영업 시간은 임시 연장 운영을 반영하지 못할 수 있다.",
+      "## 예약과 자유관람을 섞는다",
+      "정해진 시간의 워크숍이나 토크를 먼저 넣고, 앞뒤에 자유관람 전시를 배치한다. 예약 프로그램을 연달아 두면 첫 일정이 지연됐을 때 모두 놓칠 수 있다.",
+      "## 관람 피로를 계산한다",
+      "작품을 오래 읽는 사람은 하루 세 곳만 봐도 충분하다. 이동뿐 아니라 물품 보관, 입장 대기, 도록 열람 시간을 포함한다. 식사는 유명 공간보다 다음 전시장으로 가는 길에 배치한다.",
+      "## 일정표 예시",
+      "- 14:00 핵심 전시 관람\n- 16:00 같은 권역의 소규모 갤러리\n- 17:30 식사와 휴식\n- 19:00 예약한 아티스트 토크\n- 20:30 귀가 역 방향의 야간 개장 공간",
+      "지도에서 가까워 보여도 언덕, 큰 도로, 건물 출입구 때문에 실제 이동은 길어질 수 있다. 공간 사이 이동 시간을 지도 앱 예상치보다 10분 넉넉히 두고, 물품 보관이나 입장 등록이 필요한 기관은 첫 순서에 배치한다. 사진 촬영 금지와 가방 크기 제한도 공간마다 다르므로 한 기관의 규칙을 전체 행사에 적용하지 않는다.",
+      "마지막 입장 10분 전에 도착하는 일정은 실패하기 쉽다. 문을 닫는 시각과 마지막 입장 시각을 구분하고, 늦었을 때 건너뛸 공간을 미리 표시한다.",
+      "많이 보는 일정은 기록이 남지 않는다. 각 공간에서 인상 깊었던 작품과 실제 대기 시간을 한 줄씩 남기면 다음 아트위크의 기준이 된다."
+    ]
+  },
+  {
+    slug: "festival-cancellation-notice",
+    title: "행사 취소·변경 공지를 가장 빨리 찾는 검색 순서",
+    summary: "검색 결과 요약이 아니라 주최 공지, 예매처 알림, 행사장 채널의 게시 시각을 대조합니다.",
+    category: "공지 확인",
+    updatedAt: "2026-08-06T17:59:00+09:00",
+    readingTime: "6분",
+    audience: "행사 직전 취소·연기·장소 변경을 확인해야 하는 방문자",
+    keyChecks: ["게시 시각", "행사명·회차", "티켓 처리", "장소 변경"],
+    sourceLinks: [{ label: "문화포털", url: "https://www.culture.go.kr/" }],
+    body: [
+      "## 검색어를 행사명만 쓰지 않는다",
+      "행사명 뒤에 '공지', '취소', '우천', 방문 날짜를 붙인다. 포털 결과의 문장만 읽지 말고 주최 기관 도메인으로 들어간다. 과거 회차의 취소 공지가 상단에 나올 수 있어 연도를 확인한다.",
+      "## 세 채널의 역할",
+      "주최 측은 전체 일정과 프로그램 변경을, 예매처는 티켓·환불을, 행사장은 입구·주차·현장 운영을 공지하는 경우가 많다. 한 곳의 공지로 다른 문제까지 추정하지 않는다.",
+      "## 게시 시각을 비교한다",
+      "같은 날 서로 다른 안내가 있으면 가장 최근 게시물을 우선하되, 담당 기관의 범위를 본다. 예매처의 자동 알림보다 주최 측 긴급 공지가 늦게 올라올 수 있다.",
+      "## 변경 유형별 행동",
+      "- 취소: 티켓 자동 환불인지 직접 신청인지 확인\n- 연기: 기존 티켓 유지와 취소 선택 기한 확인\n- 장소 변경: 교통·좌석·입장 시각 다시 계산\n- 일부 축소: 방문 목적 프로그램이 남았는지 확인",
+      "## 증거를 남긴다",
+      "결제한 행사라면 공지 화면과 예매내역을 캡처한다. 문의할 때 행사명, 회차, 주문번호, 공지 URL을 함께 보내면 처리 시간을 줄일 수 있다.",
+      "소셜미디어 공지는 빠르지만 게시물이 수정되거나 사라질 수 있다. 중요한 변경은 주최 측 홈페이지와 예매처 알림에서도 확인하고 게시 시각을 함께 저장한다. 댓글의 운영자 답변은 특정 질문에만 해당할 수 있으므로 전체 방문자에게 적용되는 공지와 구분한다.",
+      "장소만 바뀐 경우에도 기존 티켓의 좌석과 입장 순서가 유지되는지, 셔틀이나 주차 안내가 새 장소에 맞게 바뀌었는지 확인한다. 일부 프로그램만 취소됐다면 내가 예매한 회차의 상태를 따로 본다.",
+      "공지가 없다는 이유로 정상 운영을 단정하지 않는다. 장거리 이동이라면 출발 직전 공식 전화나 고객센터 운영 여부까지 확인한다."
+    ]
+  },
+  {
+    slug: "summer-event-heat-safety",
+    title: "폭염 속 여름행사 체류 시간을 정하는 기준",
+    summary: "기온보다 그늘, 지면, 대기 줄, 물 반입과 냉방 대피 장소를 기준으로 방문 시간을 줄입니다.",
+    category: "폭염 대응",
+    updatedAt: "2026-08-06T18:14:00+09:00",
+    readingTime: "6분",
+    audience: "해변·광장·공원에서 열리는 여름 행사 방문자",
+    keyChecks: ["폭염특보", "그늘·냉방", "물 반입", "대기 줄"],
+    sourceLinks: [
+      { label: "기상청 날씨누리", url: "https://www.weather.go.kr/" },
+      { label: "국민재난안전포털", url: "https://www.safekorea.go.kr/" }
+    ],
+    body: [
+      "## 최고기온보다 현장 표면을 본다",
+      "광장 포장면과 모래사장은 기온보다 뜨거울 수 있다. 그늘이 없는 대기 줄은 짧아도 체력 소모가 크다. 행사 지도에서 실내 대피 공간, 그늘, 급수대 위치를 찾는다.",
+      "## 회차 선택",
+      "오후 한두 시 회차보다 오전 또는 해질 무렵이 낫지만, 야간 회차는 귀가 혼잡이 생긴다. 아이와 방문한다면 더위와 귀가 중 어느 위험을 줄일지 결정한다.",
+      "## 반입 규정을 확인한다",
+      "물병은 허용돼도 유리 용기, 큰 아이스박스, 음식물은 제한될 수 있다. 현장에서 물을 살 수 있는 위치와 결제 수단을 확인한다. 음주를 수분 보충으로 생각하면 안 된다.",
+      "## 몸의 신호",
+      "두통, 어지러움, 메스꺼움, 비정상적인 피로가 생기면 프로그램을 포기하고 시원한 곳으로 이동한다. 어린이는 증상을 정확히 설명하지 못할 수 있어 얼굴색과 반응을 자주 본다.",
+      "## 90분 규칙 예시",
+      "- 30분 관람 또는 체험\n- 15분 그늘 휴식과 수분 보충\n- 30분 두 번째 프로그램\n- 상태를 확인하고 귀가 또는 실내 이동",
+      "일행 중 어린이, 고령자, 임신부, 만성질환자가 있다면 가장 더위에 약한 사람을 기준으로 시간을 줄인다. 조금씩 자주 수분을 보충하고, 냉방 공간에 들어간 뒤에도 증상이 계속되면 현장 의료 부스나 119 도움을 요청한다. 행사 완주보다 몸의 이상 신호에 바로 반응하는 것이 우선이다.",
+      "폭염특보가 해제돼도 광장과 모래의 표면 온도는 늦게 내려갈 수 있다. 현장에 그늘이 부족하면 대기 줄이 짧은 프로그램만 선택하고 실내 대체 일정으로 이동한다.",
+      "유명 프로그램을 놓치는 것보다 더위로 귀가가 어려워지는 비용이 크다. 폭염특보가 있으면 야외 체류를 줄이거나 날짜를 바꾼다."
+    ]
+  },
+  {
+    slug: "official-event-page-reading",
+    title: "공식 행사 페이지에서 확정·예정·미공개를 구분하는 법",
+    summary: "행사 정보를 빈칸 없이 채우려 하지 않고, 확인된 사실과 추후 공지를 명확히 나눕니다.",
+    category: "정보 검증",
+    updatedAt: "2026-08-06T18:29:00+09:00",
+    readingTime: "7분",
+    audience: "여러 사이트의 행사 정보를 비교하거나 직접 방문 계획을 기록하는 사람",
+    keyChecks: ["연도와 회차", "확정·예정 표현", "직접 공지 URL", "확인일"],
+    sourceLinks: [
+      { label: "서울특별시 펀서울", url: "https://festival.seoul.go.kr/" },
+      { label: "부산축제조직위원회", url: "https://www.bfo.or.kr/" }
+    ],
+    body: [
+      "## 가장 먼저 연도와 회차",
+      "검색 결과에는 작년 포스터와 올해 모집 공고가 함께 나온다. 제목의 연도, 제몇 회인지, 게시일을 본다. 행사명은 같아도 장소와 기간이 바뀔 수 있다.",
+      "## 확정과 예정을 그대로 적는다",
+      "공식 페이지가 '(예정)'이라고 쓰면 일정표에도 예정이라고 남긴다. 가격이 없으면 작년 가격을 가져오지 않고 미공개라고 적는다. 빈칸을 채우는 것보다 불확실성을 보존하는 것이 방문자에게 더 유용하다.",
+      "## 기관 첫 화면이 출처가 될 수 없는 이유",
+      "기관 홈페이지 첫 화면은 행사명 검색을 다시 요구한다. 일정과 장소를 뒷받침하려면 개별 행사 상세나 공고 URL을 저장한다. 링크를 열었을 때 해당 연도와 날짜가 바로 보여야 한다.",
+      "## 서로 다른 공식 페이지가 다를 때",
+      "행사 목록과 전용 홈페이지의 기간이 다르면 최근 게시일과 운영 책임을 확인한다. 전용 누리집의 최신 개요, 날짜가 적힌 공고, 예매처 순서로 대조하고 차이가 있었다는 사실도 기록한다.",
+      "## 확인 기록에 필요한 다섯 항목",
+      "- 확인한 날짜와 시각\n- 개별 원문 URL\n- 행사 시작·종료일\n- 장소와 입장 방식\n- 아직 공개되지 않은 항목",
+      "확인 기록에는 원문을 열었을 때 어떤 항목이 실제로 보였는지도 짧게 적는다. 링크가 유지돼도 페이지 내용이 바뀔 수 있기 때문이다. 날짜가 이미지에만 있고 본문과 다르면 이미지의 제작 연도와 본문의 수정일을 비교한다. 포스터 속 작은 글씨를 임의로 확대 해석하지 않고, 확인하기 어려운 조건은 주최 측 텍스트 공지를 추가로 찾는다.",
+      "공식 사이트라고 해서 모든 페이지가 같은 시점에 갱신되는 것은 아니다. 전용 행사 안내, 최신 공지, 예매 화면의 역할을 나누고 서로 다를 때는 어느 정보가 방문 행동을 직접 통제하는지 판단한다.",
+      "정확한 행사 정보는 문장을 길게 쓰는 데서 나오지 않는다. 확인된 사실과 미정 상태를 분리하고, 바뀌었을 때 어떤 원문을 다시 볼지 남기는 데서 나온다."
+    ]
+  }
+];
 
 export const eventsSiteOverrides: Partial<SiteConfig> = {
   name: "전국행사노트",
-  headline: "이번 주말 행사, 날짜보다 방문 조건부터 확인하세요",
-  description: "전국 축제, 전시, 무료 행사를 예매, 날씨, 교통, 가족 동반 기준으로 다시 정리하는 행사 방문 편집노트입니다.",
-  identity: "전국행사노트는 행사명보다 방문자가 실제로 확인해야 할 일정, 예매, 비용, 교통, 날씨 변수를 먼저 정리합니다.",
+  headline: "날짜가 확인된 행사만 정리합니다",
+  description: "전국 축제와 전시의 실제 개최일, 장소, 요금, 예매, 우천·교통 변수를 공식 상세 페이지와 함께 확인하는 방문 정보 서비스입니다.",
+  identity: "전국행사노트는 기관 첫 화면이 아닌 행사별 공식 공지를 연결하고, 확정·예정·미공개 상태를 구분해 기록합니다.",
   nav: [
-    { label: "이번 주", href: "/events/items" },
-    { label: "무료 행사", href: "/events/category/무료 행사" },
-    { label: "우천 대안", href: "/events/guides/event-rain-outdoor-decision" },
-    { label: "출처", href: "/events/sources" }
+    { label: "일정", href: "/items" },
+    { label: "무료 행사", href: "/category/무료%20행사" },
+    { label: "방문 가이드", href: "/guides" },
+    { label: "업데이트", href: "/updates" }
   ],
-  categories: ["축제", "전시", "체험", "가족 나들이", "무료 행사"],
-  searchPlaceholder: "지역, 무료, 우천, 아이동반, 전시 키워드 검색",
-  visualText: "날짜, 예매, 교통, 날씨를 함께 보는 행사 방문 데스크",
-  disclaimer: "행사 일정과 운영 조건은 주최 측 사정, 날씨, 현장 통제에 따라 달라질 수 있습니다. 방문 전 공식 안내를 다시 확인하세요."
+  categories: ["축제", "전시·예술", "체험·가족", "야간 행사", "무료 행사"],
+  searchPlaceholder: "행사명, 지역, 날짜, 무료, 예매 검색",
+  visualText: "확정 날짜·직접 출처·방문 조건을 한 화면에서 비교",
+  disclaimer: "예정 행사는 주최 측 사정으로 변경될 수 있습니다. 각 글의 확인일과 직접 공식 링크를 보고 출발 당일 최신 공지를 다시 확인하세요."
 };

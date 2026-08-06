@@ -101,6 +101,13 @@ export type InfoItem = {
     startDate: string;
     endDate?: string;
     locationName: string;
+    locationAddress: string;
+    organizerName: string;
+    eventStatus?: "https://schema.org/EventScheduled" | "https://schema.org/EventPostponed" | "https://schema.org/EventCancelled";
+    price?: number;
+    priceCurrency?: "KRW";
+    availability?: "https://schema.org/InStock" | "https://schema.org/SoldOut" | "https://schema.org/PreOrder";
+    ticketUrl?: string;
   };
 };
 
