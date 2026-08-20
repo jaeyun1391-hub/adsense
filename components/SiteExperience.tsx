@@ -8,6 +8,8 @@ import { StructuredData } from "@/components/StructuredData";
 import { documentLabel, getEditorialGuides, getExperience, publicOperator } from "@/lib/experience";
 import { getPublicRecord, getPublicRecords, getSourceHealth, readCurrentTimestamp, type PublishedRecord } from "@/lib/operations";
 import { operationalDocumentAddendum, operationalDocumentBlocks, type OperatingDocumentKey } from "@/lib/operational-content";
+import { examOperationalDocumentBlocks } from "@/lib/exam-operational-content";
+import { examCategoryMeta, examSourceGroups } from "@/lib/exam-content";
 import { publicUrl } from "@/lib/seo";
 import { getItem, type Guide, type SiteConfig, type SiteSlug } from "@/lib/sites";
 
@@ -58,19 +60,38 @@ function eventBoundary(value: string, end = false) {
 }
 
 function ExamHome({ site, records, live }: { site: SiteConfig; records: PublishedRecord[]; live: boolean }) {
-  const experience = getExperience(site.slug);
+  const urgent = records.filter((record) => /중|임박|예정/.test(record.details["현재 상태"] ?? "")).slice(0, 6);
+  const later = records.filter((record) => !urgent.some((item) => item.id === record.id)).slice(0, 6);
   return (
     <ExperienceShell site={site} active="home">
-      <section className="exam-planner experience-width">
-        <header className="exam-planner-head"><div><p>EXAM PLANNER / 일정 관리판</p><h1>접수·응시·발표를<br />각각 관리하는 시험 일정판</h1><span>{experience.descriptor}</span></div><nav><Link href="/items">일정 전체 <ArrowRight size={15} /></Link><Link href="/guides">준비 가이드</Link></nav></header>
-        <div className="exam-planner-board">
-          <section className="exam-date-lanes"><header><div><p>NOW IN REVIEW</p><h2>다음 행동을 정할 일정</h2></div><CalendarClock size={21} /></header>{records.slice(0, 6).map((record, index) => <Link key={record.id} href={`/items/${record.slug}`}><span>{String(index + 1).padStart(2, "0")}</span><div><small>{record.category}</small><b>{record.title}</b></div><p>{record.period}</p><ArrowUpRight size={16} /></Link>)}</section>
-          <aside className="exam-planner-notes"><p>접수 전에 메모할 것</p><ol><li><b>01</b><span>활용처의 제출 마감</span></li><li><b>02</b><span>결제·환불 가능 기간</span></li><li><b>03</b><span>사진·신분증·서류 상태</span></li><li><b>04</b><span>시험장과 입실 경로</span></li></ol><Link href="/guides/exam-application-order">접수 순서 읽기 <ArrowRight size={15} /></Link></aside>
+      <section className="exam-briefing">
+        <div className="experience-width exam-briefing-grid">
+          <header>
+            <p>2026.08.20 / 공식 일정 직접 검토</p>
+            <h1>오늘 해야 할 일을<br />시험 날짜보다<br />먼저 봅니다.</h1>
+            <span>접수 중인지, 이미 끝났는지, 다음 확인 시각이 언제인지 회차별로 구분했습니다.</span>
+            <nav><Link href="/items">전체 일정 <ArrowRight size={15} /></Link><Link href="/updates">검토 기록</Link></nav>
+          </header>
+          <aside>
+            <div><CalendarClock size={22} /><p>가장 먼저 확인</p></div>
+            {urgent.slice(0, 3).map((record) => <Link key={record.id} href={`/items/${record.slug}`}><span>{record.details["현재 상태"]}</span><b>{record.title}</b><small>{record.details["다음 행동"]}</small><ArrowUpRight size={16} /></Link>)}
+          </aside>
         </div>
       </section>
-      <section className="exam-decision-strip"><div className="experience-width"><p>시험 탐색의 기준</p><b>시험일 하나가 아니라, 접수·결제·준비물·발표일을 같은 일정표에서 비교합니다.</b></div></section>
-      <section className="experience-width exam-explorer-section"><div className="section-intro"><p>시험 탐색</p><h2>필요한 일정만 좁혀 보기</h2><span>분야와 현재 준비 단계로 탐색합니다.</span></div><SiteExplorer siteSlug={site.slug} records={records} compact /></section>
-      <section className="experience-width source-row"><SourceState site={site} live={live} /></section>
+      <section className="exam-live-board experience-width">
+        <header><div><p>DEADLINE BOARD</p><h2>현재 움직이는 일정</h2></div><span>총 {records.length}건 · 개별 공식 원문 연결</span></header>
+        <div className="exam-live-table">
+          {urgent.map((record) => <Link key={record.id} href={`/items/${record.slug}`}>
+            <span className="exam-status">{record.details["현재 상태"]}</span>
+            <div><small>{record.category}</small><b>{record.title}</b><p>{record.details["다음 행동"]}</p></div>
+            <time>{record.period}</time>
+            <ArrowRight size={16} />
+          </Link>)}
+        </div>
+      </section>
+      <section className="exam-later-band"><div className="experience-width"><header><p>AFTER THIS WEEK</p><h2>다음에 열릴 접수와 시험</h2><Link href="/items">일정 전체 보기 <ArrowRight size={15} /></Link></header><div>{later.map((record) => <Link key={record.id} href={`/items/${record.slug}`}><span>{record.category}</span><b>{record.title}</b><small>{record.period}</small></Link>)}</div></div></section>
+      <section className="experience-width exam-tool-desk"><div className="section-intro"><p>상황별 탐색</p><h2>접수·시험·발표로 좁혀 보기</h2><span>제목이 아니라 현재 상태와 준비 문제를 검색합니다.</span></div><SiteExplorer siteSlug={site.slug} records={records} compact /></section>
+      <section className="experience-width exam-source-proof"><div><p>EDITORIAL RULE</p><h2>기관 첫 화면이 아니라<br />날짜가 보이는 원문으로 갑니다.</h2><Link href="/editorial-policy">편집 기준 읽기 <ArrowRight size={15} /></Link></div><SourceState site={site} live={live} /></section>
     </ExperienceShell>
   );
 }
@@ -184,6 +205,9 @@ export async function SiteItemsView({ site, heading, records: suppliedRecords }:
   if (site.slug === "events") {
     return <ExperienceShell site={site} active="items"><section className="events-index-head experience-width"><p>EVENT CALENDAR / VERIFIED LINKS</p><h1>{heading ?? "확인된 행사 일정"}</h1><div><span>총 {snapshot.records.length}건</span><p>개별 공식 페이지에서 날짜와 장소가 확인된 행사입니다. 예정·미공개 상태는 확정 정보와 구분합니다.</p></div></section><section className="experience-width explorer-page"><SiteExplorer siteSlug={site.slug} records={snapshot.records} /></section></ExperienceShell>;
   }
+  if (site.slug === "exam") {
+    return <ExperienceShell site={site} active="items"><section className="exam-index-head experience-width"><p>VERIFIED SCHEDULE / 2026</p><h1>{heading ?? "현재 단계가 확인된 시험 일정"}</h1><div><b>{snapshot.records.length}건</b><span>접수 가능 여부와 다음 행동을 날짜로 표시합니다.</span></div></section><section className="experience-width explorer-page"><SiteExplorer siteSlug={site.slug} records={snapshot.records} /></section></ExperienceShell>;
+  }
   return (
     <ExperienceShell site={site} active="items">
       <section className={`experience-index experience-index--${experience.frame} experience-width`}>
@@ -201,6 +225,23 @@ export async function SiteCategoryView({ site, category }: { site: SiteConfig; c
   const experience = getExperience(site.slug);
   if (site.slug === "events") {
     return <ExperienceShell site={site} active="items"><section className="events-category-head experience-width"><p>EVENT TYPE</p><h1>{category}</h1><div><b>{records.length}건</b><span>기간·장소·입장 조건이 확인된 {category} 기록입니다.</span></div></section><section className="experience-width explorer-page"><SiteExplorer siteSlug={site.slug} records={records} /></section></ExperienceShell>;
+  }
+  if (site.slug === "exam") {
+    const meta = examCategoryMeta(category);
+    return <ExperienceShell site={site} active="items">
+      <section className="exam-category-lead">
+        <div className="experience-width">
+          <p>EXAM ROUTE / {category}</p>
+          <h1>{meta.title}</h1>
+          <span>{meta.summary}</span>
+        </div>
+      </section>
+      <section className="exam-category-checks experience-width">
+        <header><b>{records.length}건</b><span>현재 공개 기록</span></header>
+        <ol>{meta.checks.map((check, index) => <li key={check}><span>{String(index + 1).padStart(2, "0")}</span><b>{check}</b></li>)}</ol>
+      </section>
+      <section className="experience-width explorer-page"><SiteExplorer siteSlug={site.slug} records={records} /></section>
+    </ExperienceShell>;
   }
   return (
     <ExperienceShell site={site} active="items">
@@ -254,22 +295,25 @@ export async function SiteItemDetailView({ site, slug }: { site: SiteConfig; slu
   const related = (await getPublicRecords(site)).records.filter((candidate) => candidate.slug !== slug && candidate.category === record.category).slice(0, 3);
   const guides = getEditorialGuides(site).slice(0, 3);
   const event = site.slug === "events" ? editorialItem?.eventSchema : undefined;
-  const structuredData = event ? {
+  const examState = record.details["현재 상태"] ?? "";
+  const exam = site.slug === "exam" && !/점수|합격자 발표/.test(examState) ? editorialItem?.examSchema : undefined;
+  const scheduled = event ?? exam;
+  const structuredData = scheduled ? {
     "@context": "https://schema.org",
     "@type": "Event",
     name: record.title,
     description: record.summary,
-    startDate: event.startDate,
-    endDate: event.endDate,
-    eventStatus: event.eventStatus ?? "https://schema.org/EventScheduled",
+    startDate: scheduled.startDate,
+    endDate: scheduled.endDate,
+    eventStatus: scheduled.eventStatus ?? "https://schema.org/EventScheduled",
     eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
     location: {
       "@type": "Place",
-      name: event.locationName,
-      address: { "@type": "PostalAddress", streetAddress: event.locationAddress, addressCountry: "KR" }
+      name: scheduled.locationName,
+      address: { "@type": "PostalAddress", streetAddress: scheduled.locationAddress, addressCountry: "KR" }
     },
-    organizer: { "@type": "Organization", name: event.organizerName },
-    offers: event.ticketUrl && event.price !== undefined ? {
+    organizer: { "@type": "Organization", name: scheduled.organizerName },
+    offers: event?.ticketUrl && event.price !== undefined ? {
       "@type": "Offer",
       url: event.ticketUrl,
       price: event.price,
@@ -290,6 +334,33 @@ export async function SiteItemDetailView({ site, slug }: { site: SiteConfig; slu
     publisher: { "@type": "Organization", name: publicOperator.organization },
     image: [publicUrl(site, "/opengraph-image")]
   };
+  if (site.slug === "exam" && editorialItem) {
+    const detailEntries = Object.entries(record.details);
+    return <ExperienceShell site={site} active="items">
+      <StructuredData data={structuredData} />
+      <article className="exam-record-detail">
+        <header className="exam-record-mast experience-width">
+          <div><p>EXAM FILE / {record.details["현재 상태"]}</p><h1>{record.title}</h1></div>
+          <aside><span>마지막 원문 검토</span><b>{toDisplayDate(record.lastCheckedAt)}</b><small>{record.sourceName}</small></aside>
+          <p>{record.summary}</p>
+        </header>
+        <div className="exam-record-layout experience-width">
+          <aside className="exam-record-sidebar">
+            <section><p>STATUS SHEET</p><dl>{detailEntries.map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl></section>
+            <section><p>BEFORE ACTION</p><ol>{editorialItem.keyChecks?.map((check, index) => <li key={check}><span>{String(index + 1).padStart(2, "0")}</span>{check}</li>)}</ol></section>
+          </aside>
+          <div className="exam-record-copy">
+            <div className="exam-record-intro"><b>한 줄 판단</b><p>{record.details["다음 행동"]}</p></div>
+            <RichContent blocks={editorialItem.body} />
+            {editorialItem.faq.length ? <section className="exam-record-faq"><p>QUESTIONS</p><h2>이 회차에서 자주 헷갈리는 것</h2>{editorialItem.faq.map((faq) => <div key={faq.question}><h3>{faq.question}</h3><p>{faq.answer}</p></div>)}</section> : null}
+            <ArticleSources record={record} links={editorialItem.sourceLinks} />
+            <section className="exam-record-author"><FileCheck2 size={20} /><div><b>{getExperience(site.slug).deskName} · {publicOperator.name}</b><p>회차, 날짜, 마감 시각과 후속 단계를 공식 원문에서 직접 대조했습니다. 개인 접수 상태는 운영기관 계정에서 최종 확인해야 합니다.</p></div></section>
+            <section className="exam-record-related"><p>NEXT FILES</p>{related.map((item) => <Link key={item.id} href={`/items/${item.slug}`}>{item.title}<ArrowRight size={15} /></Link>)}{guides.map((guide) => <Link key={guide.slug} href={`/guides/${guide.slug}`}>{guide.title}<ArrowRight size={15} /></Link>)}</section>
+          </div>
+        </div>
+      </article>
+    </ExperienceShell>;
+  }
   return (
     <ExperienceShell site={site} active="items">
       <StructuredData data={structuredData} />
@@ -304,6 +375,16 @@ export async function SiteItemDetailView({ site, slug }: { site: SiteConfig; slu
 export function SiteGuidesView({ site }: { site: SiteConfig }) {
   const guides = getEditorialGuides(site);
   const experience = getExperience(site.slug);
+  if (site.slug === "exam") {
+    const groups = examSourceGroups();
+    return <ExperienceShell site={site} active="guides">
+      <section className="exam-guide-desk experience-width">
+        <header><p>APPLICATION TROUBLESHOOTING</p><h1>접수 화면에서 막히기 전에<br />순서부터 정리합니다.</h1><span>시험 소개를 반복하지 않고 결제, 시험장, 신분증, 환불, 서류, 성적 제출처럼 실제로 실패가 생기는 지점을 다룹니다.</span></header>
+        <div className="exam-guide-ledger">{guides.map((guide, index) => <Link key={guide.slug} href={`/guides/${guide.slug}`}><span>{String(index + 1).padStart(2, "0")}</span><div><small>{guide.category} · {guide.readingTime}</small><h2>{guide.title}</h2><p>{guide.summary}</p></div><ArrowUpRight size={17} /></Link>)}</div>
+      </section>
+      <section className="exam-source-directory"><div className="experience-width"><header><p>DIRECT SOURCES</p><h2>가이드에서 다시 확인하는 공식 창구</h2></header><div>{groups.map((group) => <section key={group.title}><h3>{group.title}</h3>{group.links.map((link) => <a key={link.url} href={link.url} target="_blank" rel="noreferrer">{link.label}<ExternalLink size={14} /></a>)}</section>)}</div></div></section>
+    </ExperienceShell>;
+  }
   return <ExperienceShell site={site} active="guides"><section className={`guide-index guide-index--${site.slug} experience-width`}><header><p className="eyebrow">EDITORIAL GUIDES</p><h1>{experience.secondaryAction}</h1><p>정답을 대신 말하기보다, 실제로 막히는 순서를 풀어낸 편집형 가이드입니다.</p></header><div className="guide-grid">{guides.map((guide, index) => <Link className="guide-card" key={guide.slug} href={`/guides/${guide.slug}`}><span>GUIDE {String(index + 1).padStart(2, "0")}</span><p>{guide.category}</p><h2>{guide.title}</h2><small>{guide.summary}</small><b>읽기 <ArrowRight size={15} /></b></Link>)}</div></section></ExperienceShell>;
 }
 
@@ -314,20 +395,33 @@ function headingsFor(guide: Guide) {
 export function SiteGuideDetailView({ site, guide }: { site: SiteConfig; guide: Guide }) {
   const headings = headingsFor(guide);
   const canonical = publicUrl(site, `/guides/${guide.slug}`);
+  if (site.slug === "exam") {
+    return <ExperienceShell site={site} active="guides">
+      <StructuredData data={{ "@context": "https://schema.org", "@type": "Article", headline: guide.title, description: guide.summary, datePublished: guide.updatedAt, dateModified: guide.updatedAt, mainEntityOfPage: canonical, image: [publicUrl(site, "/opengraph-image")], author: { "@type": "Person", name: publicOperator.name }, publisher: { "@type": "Organization", name: publicOperator.organization, url: publicUrl(site) } }} />
+      <article className="exam-manual experience-width">
+        <header><p>PROCEDURE MANUAL / {guide.category}</p><h1>{guide.title}</h1><span>{guide.summary}</span><div><b>{guide.readingTime}</b><small>검토 {toDisplayDate(guide.updatedAt)} · {publicOperator.name}</small></div></header>
+        <div className="exam-manual-grid">
+          <aside><p>이 글의 순서</p><ol>{headings.map((heading, index) => <li key={heading}><span>{String(index + 1).padStart(2, "0")}</span>{heading}</li>)}</ol>{guide.keyChecks?.length ? <section><b>완료 기준</b>{guide.keyChecks.map((check) => <span key={check}>{check}</span>)}</section> : null}</aside>
+          <div className="exam-manual-copy"><RichContent blocks={guide.body} /><section className="exam-manual-sources"><p>OFFICIAL REFERENCES</p><h2>확인에 사용한 공식 원문</h2>{guide.sourceLinks?.map((source) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{source.label}<ExternalLink size={14} /></a>)}</section><section className="exam-record-author"><FileCheck2 size={20} /><div><b>{getExperience(site.slug).deskName} · {publicOperator.name}</b><p>기관별 용어가 다른 지점을 한 절차로 섞지 않고, 각 원문의 실제 상태명과 확인 순서를 기준으로 작성했습니다.</p></div></section></div>
+        </div>
+      </article>
+    </ExperienceShell>;
+  }
   return <ExperienceShell site={site} active="guides"><StructuredData data={{ "@context": "https://schema.org", "@type": "Article", headline: guide.title, description: guide.summary, datePublished: guide.updatedAt, dateModified: guide.updatedAt, mainEntityOfPage: canonical, image: [publicUrl(site, "/opengraph-image")], author: { "@type": "Person", name: publicOperator.name }, publisher: { "@type": "Organization", name: publicOperator.organization, url: publicUrl(site) } }} /><article className="guide-article experience-width"><header><p>{guide.category}</p><h1>{guide.title}</h1><span>{guide.summary}</span><div>작성·검토 {getExperience(site.slug).deskName} · 마지막 검토 {toDisplayDate(guide.updatedAt)}</div></header><div className="guide-article-grid"><aside className="guide-toc"><b>이 글의 순서</b>{headings.map((heading) => <span key={heading}>{heading}</span>)}<Link href="/sources">출처 정책 보기</Link></aside><div className="guide-content"><RichContent blocks={guide.body} /><section className="guide-author"><FileCheck2 size={20} /><div><h3>작성자 검토 메모</h3><b>{publicOperator.name} · {publicOperator.organization}</b><p>공식 원문과 실제 이용 순서를 대조해, 독자가 마지막으로 확인해야 할 항목을 편집합니다.</p></div></section></div></div></article></ExperienceShell>;
 }
 
 function DocumentBody({ site, document }: { site: SiteConfig; document: OperationalDocument }) {
   const sourceHealth = getSourceHealth(site.slug);
-  const blocks = operationalDocumentBlocks(site, document as OperatingDocumentKey);
+  const blocks = site.slug === "exam" ? examOperationalDocumentBlocks(document) : operationalDocumentBlocks(site, document as OperatingDocumentKey);
   return <>
     <RichContent blocks={blocks} />
-    <RichContent blocks={operationalDocumentAddendum(site, document as OperatingDocumentKey, blocks)} />
+    {site.slug === "exam" ? null : <RichContent blocks={operationalDocumentAddendum(site, document as OperatingDocumentKey, blocks)} />}
     {document === "sources" ? <section className="document-source-list" aria-label="공식 원문 링크">{sourceHealth.map((source) => <div key={source.id}><b>{source.label}</b><a href={source.publicUrl} target="_blank" rel="noreferrer">원문 열기 <ExternalLink size={14} /></a></div>)}</section> : null}
   </>;
 }
 
 export function SiteDocumentView({ site, document }: { site: SiteConfig; document: OperationalDocument }) {
   const experience = getExperience(site.slug);
-  return <ExperienceShell site={site} active="documents"><article className={`document-page document-page--${experience.frame} experience-width`}><header><p className="eyebrow">OPERATING DOCUMENT / {experience.deskName}</p><h1>{documentLabel(document)}</h1><p>{site.name}의 공개 운영 기준과 확인 흐름을 기록합니다.</p></header><div className="document-content"><DocumentBody site={site} document={document} /></div><footer><Flag size={17} /><span>최종 기준은 해당 기관의 공식 원문이며, 이 문서는 변경 사항을 확인하는 기준을 설명합니다.</span></footer></article></ExperienceShell>;
+  const intro = site.slug === "exam" ? "시험 회차를 공개하고 수정하는 기준, 출처와 운영 책임을 문서별로 기록합니다." : `${site.name}의 공개 운영 기준과 확인 흐름을 기록합니다.`;
+  return <ExperienceShell site={site} active="documents"><article className={`document-page document-page--${experience.frame} experience-width`}><header><p className="eyebrow">OPERATING DOCUMENT / {experience.deskName}</p><h1>{documentLabel(document)}</h1><p>{intro}</p></header><div className="document-content"><DocumentBody site={site} document={document} /></div><footer><Flag size={17} /><span>최종 기준은 해당 기관의 공식 원문이며, 이 문서는 변경 사항을 확인하는 기준을 설명합니다.</span></footer></article></ExperienceShell>;
 }

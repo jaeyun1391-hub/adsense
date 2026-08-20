@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "audit:events": "node scripts/audit-events.mjs"
+    "audit:events": "node scripts/audit-events.mjs",
+    "audit:exams": "node scripts/audit-exams.mjs"
   },
   "dependencies": {
     "lucide-react": "1.14.0",

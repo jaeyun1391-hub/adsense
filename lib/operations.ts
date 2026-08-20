@@ -88,13 +88,18 @@ const manifest = operationsFile as unknown as OperationsManifest;
 
 const sourceDefinitions: SourceDefinition[] = [
   {
-    id: "qnet-schedule",
+    id: "dataq-schedule",
     siteSlug: "exam",
-    label: "Q-Net 시험 일정",
-    publicUrl: "https://www.q-net.or.kr/",
-    allowedHosts: ["q-net.or.kr"],
+    label: "데이터자격시험 2026 일정",
+    publicUrl: "https://www.dataq.or.kr/www/accept/schedule.do",
+    allowedHosts: ["dataq.or.kr"],
     mode: "stability"
   },
+  { id: "history-schedule", siteSlug: "exam", label: "한국사능력검정시험 일정", publicUrl: "https://www.historyexam.go.kr/pageLink.do?link=examSchedule", allowedHosts: ["historyexam.go.kr"], mode: "stability" },
+  { id: "toeic-schedule", siteSlug: "exam", label: "TOEIC 공식 시험일정", publicUrl: "https://exam.toeic.co.kr/receipt/examSchList.php", allowedHosts: ["toeic.co.kr"], mode: "stability" },
+  { id: "jlpt-schedule", siteSlug: "exam", label: "JLPT 2026 제2회 일정", publicUrl: "https://jlpt.or.kr/html/index.html", allowedHosts: ["jlpt.or.kr"], mode: "stability" },
+  { id: "qnet-realtor", siteSlug: "exam", label: "Q-Net 공인중개사 제37회", publicUrl: "https://www.q-net.or.kr/man001.do?gId=08&gSite=L&id=", allowedHosts: ["q-net.or.kr"], mode: "stability" },
+  { id: "local-gosi", siteSlug: "exam", label: "2026 지방공무원 공통 일정", publicUrl: "https://local.gosi.go.kr/klid/sihum/examNewNoticeView.do?pageNo=1&pageUnit=10&strClass=0&strKeyword=&strOperOrg=&strOperOrgCd=00&strOperYy=2025&strSearch=0&strSeq=274", allowedHosts: ["local.gosi.go.kr"], mode: "stability" },
   {
     id: "seoul-events",
     siteSlug: "events",
@@ -161,8 +166,8 @@ function toReferenceRecord(site: SiteConfig, item: InfoItem): PublishedRecord {
     category: item.category,
     region: item.region,
     period: item.period,
-    startDate: item.eventSchema?.startDate,
-    endDate: item.eventSchema?.endDate,
+    startDate: item.eventSchema?.startDate ?? item.examSchema?.startDate,
+    endDate: item.eventSchema?.endDate ?? item.examSchema?.endDate,
     sourceName: item.source,
     sourceUrl: item.sourceUrl,
     status: "reference",
@@ -195,9 +200,23 @@ function isPublishableRecord(record: PublishedRecord, siteSlug: SiteSlug) {
 }
 
 export async function getPublicRecords(site: SiteConfig) {
+  const examStatusRank = (status = "") => {
+    if (status.includes("마감 임박")) return 0;
+    if (status.includes("접수 중")) return 1;
+    if (status.includes("시험 임박")) return 2;
+    if (status.includes("점수") || status.includes("발표 예정")) return 3;
+    if (status.includes("수험표")) return 4;
+    if (status.includes("접수 예정")) return 5;
+    return 6;
+  };
   const published = manifest.records
     .filter((record) => isPublishableRecord(record, site.slug))
     .sort((left, right) => {
+      if (site.slug === "exam") {
+        const rankDifference = examStatusRank(left.details["현재 상태"]) - examStatusRank(right.details["현재 상태"]);
+        if (rankDifference !== 0) return rankDifference;
+        return Date.parse(right.lastCheckedAt) - Date.parse(left.lastCheckedAt);
+      }
       if (site.slug === "events" && left.startDate && right.startDate) {
         const now = Date.now();
         const leftStart = Date.parse(left.startDate);

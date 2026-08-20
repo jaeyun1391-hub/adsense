@@ -97,6 +97,14 @@ export type InfoItem = {
   officialCheck?: string;
   bestFor?: string;
   caution?: string;
+  examSchema?: {
+    startDate: string;
+    endDate?: string;
+    locationName: string;
+    locationAddress: string;
+    organizerName: string;
+    eventStatus?: "https://schema.org/EventScheduled" | "https://schema.org/EventPostponed" | "https://schema.org/EventCancelled";
+  };
   eventSchema?: {
     startDate: string;
     endDate?: string;
