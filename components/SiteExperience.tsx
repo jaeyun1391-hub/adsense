@@ -228,6 +228,7 @@ export async function SiteCategoryView({ site, category }: { site: SiteConfig; c
   }
   if (site.slug === "exam") {
     const meta = examCategoryMeta(category);
+    const categoryGuides = getEditorialGuides(site).filter((guide) => meta.guideSlugs.includes(guide.slug));
     return <ExperienceShell site={site} active="items">
       <section className="exam-category-lead">
         <div className="experience-width">
@@ -239,6 +240,10 @@ export async function SiteCategoryView({ site, category }: { site: SiteConfig; c
       <section className="exam-category-checks experience-width">
         <header><b>{records.length}건</b><span>현재 공개 기록</span></header>
         <ol>{meta.checks.map((check, index) => <li key={check}><span>{String(index + 1).padStart(2, "0")}</span><b>{check}</b></li>)}</ol>
+      </section>
+      <section className="exam-category-notes experience-width">
+        <div>{meta.notes.map((note, index) => <article key={note.title}><span>{String(index + 1).padStart(2, "0")}</span><h2>{note.title}</h2><p>{note.body}</p></article>)}</div>
+        <aside><p>RELATED MANUALS</p><h2>이 분류에서 같이 볼 절차</h2>{categoryGuides.map((guide) => <Link key={guide.slug} href={`/guides/${guide.slug}`}>{guide.title}<ArrowRight size={15} /></Link>)}</aside>
       </section>
       <section className="experience-width explorer-page"><SiteExplorer siteSlug={site.slug} records={records} /></section>
     </ExperienceShell>;

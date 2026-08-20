@@ -281,6 +281,7 @@
 .exam-category-checks ol { display: grid; grid-template-columns: repeat(4, 1fr); margin: 0; padding: 0; list-style: none; }
 .exam-category-checks li { display: grid; align-content: center; min-height: 118px; padding: 22px; border-right: 1px solid #cad3df; }.exam-category-checks li:last-child { border-right: 0; }
 .exam-category-checks li span { color: #b4232f; font: 900 11px/1 monospace; }.exam-category-checks li b { margin-top: 10px; font-size: 14px; line-height: 1.45; }
+.exam-category-notes { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 70px; padding: 58px 0 20px; }.exam-category-notes > div { display: grid; grid-template-columns: 1fr 1fr; border-top: 3px solid #18253b; }.exam-category-notes article { min-height: 220px; padding: 25px 24px; border-right: 1px solid #cbd4df; border-bottom: 1px solid #cbd4df; }.exam-category-notes article:nth-child(odd) { border-left: 1px solid #cbd4df; }.exam-category-notes article span { color: #b4232f; font: 900 11px/1 monospace; }.exam-category-notes article h2 { margin: 14px 0 10px; font-size: 17px; line-height: 1.4; }.exam-category-notes article p { margin: 0; color: #637186; font-size: 13px; line-height: 1.7; }.exam-category-notes > aside { align-self: start; padding: 24px; color: #fff; background: #18253b; }.exam-category-notes > aside > p { margin: 0; color: #f0a0a7; font-size: 10px; font-weight: 900; }.exam-category-notes > aside h2 { margin: 9px 0 18px; font-size: 21px; }.exam-category-notes > aside a { display: flex; justify-content: space-between; gap: 10px; padding: 14px 0; border-top: 1px solid rgba(255,255,255,.2); color: #d5dce6; font-size: 12px; font-weight: 800; }
 .exam-guide-desk { display: grid; grid-template-columns: minmax(285px, .75fr) minmax(0, 1.25fr); gap: 70px; padding: 74px 0; }
 .exam-guide-desk > header { position: sticky; top: 28px; align-self: start; }
 .exam-guide-desk > header h1 { margin: 16px 0 20px; font-size: clamp(40px, 4.4vw, 62px); line-height: 1.12; }.exam-guide-desk > header > span { display: block; color: #637186; line-height: 1.75; }
@@ -309,6 +310,7 @@
   .exam-category-checks { grid-template-columns: 150px minmax(0, 1fr); }
   .exam-category-checks ol { grid-template-columns: repeat(2, 1fr); }
   .exam-category-checks li:nth-child(2) { border-right: 0; }
+  .exam-category-notes { grid-template-columns: 1fr; gap: 32px; }
   .exam-guide-desk { grid-template-columns: 1fr; gap: 38px; }
   .exam-guide-desk > header { position: static; }
   .exam-record-mast { grid-template-columns: 1fr 220px; gap: 24px; }.exam-record-layout { grid-template-columns: 250px minmax(0, 1fr); gap: 45px; }.exam-manual-grid { grid-template-columns: 210px minmax(0, 1fr); gap: 45px; }
@@ -332,6 +334,7 @@
   .exam-index-head { grid-template-columns: 1fr; padding-top: 45px; }
   .exam-category-lead { padding: 48px 0 40px; }.exam-category-lead h1 { font-size: 40px; }
   .exam-category-checks { grid-template-columns: 1fr; }.exam-category-checks > header { border-right: 0; border-bottom: 1px solid #cad3df; }.exam-category-checks li { min-height: 96px; }
+  .exam-category-notes { padding-top: 40px; }.exam-category-notes > div { grid-template-columns: 1fr; }.exam-category-notes article, .exam-category-notes article:nth-child(odd) { min-height: 0; border-left: 1px solid #cbd4df; }
   .exam-guide-desk { padding: 48px 0; }.exam-guide-desk > header h1 { font-size: 38px; }.exam-guide-ledger > a { grid-template-columns: 34px minmax(0, 1fr) auto; gap: 10px; }
   .exam-source-directory header { grid-template-columns: 1fr; gap: 8px; }.exam-source-directory .experience-width > div { grid-template-columns: 1fr; }.exam-source-directory section, .exam-source-directory section:first-child { border-right: 1px solid rgba(255,255,255,.2); border-left: 1px solid rgba(255,255,255,.2); border-bottom: 1px solid rgba(255,255,255,.2); }
   .exam-record-detail { padding-bottom: 58px; }.exam-record-mast { grid-template-columns: 1fr; padding-top: 44px; }.exam-record-mast h1 { font-size: 39px; }.exam-record-mast > aside { order: 3; }.exam-record-mast > p { grid-column: 1; }.exam-record-layout { grid-template-columns: 1fr; gap: 38px; padding-top: 28px; }.exam-record-copy { font-size: 15px; }.exam-record-sidebar { order: 2; }.exam-record-copy h2, .exam-manual-copy h2 { font-size: 26px; }

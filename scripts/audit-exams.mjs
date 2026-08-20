@@ -157,11 +157,14 @@ if (records.length !== 12) fail(`운영 저장소 시험 기록이 12건이 아�
 unique(records.map((record) => record.slug), "운영 저장소 slug");
 for (const record of records) {
   if (!record.sourceUrl || !record.lastCheckedAt || !record.details?.["현재 상태"] || !record.details?.["다음 행동"]) fail(`${record.slug}: 운영 저장소 필수 필드 누락`);
+  if (Date.parse(record.lastCheckedAt) > Date.now() + 300_000) fail(`${record.slug}: 미래 검토 시각이 기록되어 있습니다.`);
   if (!itemSlugs.includes(record.slug)) fail(`${record.slug}: 편집 콘텐츠와 운영 저장소가 연결되지 않습니다.`);
 }
 if (operations.revisions.filter((revision) => revision.recordId.startsWith("exam-")).length < 12) fail("시험 수정 이력이 12건 미만입니다.");
 if (operations.collectionRuns.filter((run) => run.siteSlug === "exam" && run.state === "reviewed").length < 6) fail("검토 완료된 공식 출처 수집 기록이 6건 미만입니다.");
-if (!operations.applicationRuns.some((run) => run.siteSlug === "exam" && run.status === "주의 필요")) fail("실제 애드센스 반려 상태 기록이 없습니다.");
+const applicationRun = operations.applicationRuns.find((run) => run.siteSlug === "exam" && run.status === "주의 필요");
+if (!applicationRun) fail("실제 애드센스 반려 상태 기록이 없습니다.");
+else if (!applicationRun.nextAction.includes("48시간")) fail("안정화 모드의 48시간 대기 절차가 기록되지 않았습니다.");
 
 const viewSource = fs.readFileSync(path.join(root, "components", "SiteExperience.tsx"), "utf8");
 for (const selector of ["exam-briefing", "exam-live-board", "exam-category-lead", "exam-guide-ledger", "exam-source-directory", "exam-record-detail", "exam-manual-grid"]) {
