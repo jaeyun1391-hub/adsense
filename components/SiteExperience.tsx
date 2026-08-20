@@ -68,7 +68,7 @@ function ExamHome({ site, records, live }: { site: SiteConfig; records: Publishe
         <div className="experience-width exam-briefing-grid">
           <header>
             <p>2026.08.20 / 공식 일정 직접 검토</p>
-            <h1>오늘 해야 할 일을<br />시험 날짜보다<br />먼저 봅니다.</h1>
+            <h1><span>오늘 해야 할 일을</span><span>시험 날짜보다</span><span>먼저 봅니다.</span></h1>
             <span>접수 중인지, 이미 끝났는지, 다음 확인 시각이 언제인지 회차별로 구분했습니다.</span>
             <nav><Link href="/items">전체 일정 <ArrowRight size={15} /></Link><Link href="/updates">검토 기록</Link></nav>
           </header>

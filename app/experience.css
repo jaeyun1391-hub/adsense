@@ -226,7 +226,8 @@
 .exam-briefing-grid { display: grid; grid-template-columns: minmax(0, .82fr) minmax(480px, 1.18fr); min-height: 570px; }
 .exam-briefing-grid > header { display: flex; flex-direction: column; justify-content: center; padding: 70px 72px 70px 0; border-right: 1px solid #cbd3de; }
 .exam-briefing-grid > header > p, .exam-live-board > header p, .exam-later-band header p, .exam-source-proof > div > p { margin: 0; color: #b4232f; font-size: 11px; font-weight: 900; letter-spacing: .08em; }
-.exam-briefing-grid h1 { margin: 18px 0 20px; color: #101827; font-size: clamp(48px, 5.1vw, 76px); line-height: 1.08; }
+.exam-briefing-grid h1 { margin: 18px 0 20px; color: #101827; font-size: clamp(48px, 5.1vw, 76px); line-height: 1.08; word-break: keep-all; }
+.exam-briefing-grid h1 span { display: block; white-space: nowrap; }
 .exam-briefing-grid > header > span { max-width: 510px; color: #536174; font-size: 17px; line-height: 1.75; }
 .exam-briefing-grid nav { display: flex; gap: 10px; margin-top: 32px; }
 .exam-briefing-grid nav a { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; padding: 0 17px; border: 1px solid #243b64; color: #fff; background: #243b64; font-size: 13px; font-weight: 800; text-decoration: none; }
@@ -318,8 +319,9 @@
 
 @media (max-width: 560px) {
   .exam-briefing-grid > header { padding-top: 40px; }
-  .exam-briefing-grid h1 { font-size: 44px; }
-  .exam-briefing-grid nav { display: grid; grid-template-columns: 1fr 1fr; }
+  .exam-briefing-grid h1 { margin: 16px 0 18px; font-size: 36px; line-height: 1.13; }
+  .exam-briefing-grid > header > span { font-size: 15px; line-height: 1.7; }
+  .exam-briefing-grid nav { display: grid; grid-template-columns: 1fr 1fr; margin-top: 27px; }
   .exam-briefing-grid > aside > a { grid-template-columns: 88px minmax(0, 1fr) auto; padding: 17px 15px; }
   .exam-live-board { padding: 44px 0 50px; }
   .exam-live-board > header { display: grid; }
@@ -339,4 +341,8 @@
   .exam-source-directory header { grid-template-columns: 1fr; gap: 8px; }.exam-source-directory .experience-width > div { grid-template-columns: 1fr; }.exam-source-directory section, .exam-source-directory section:first-child { border-right: 1px solid rgba(255,255,255,.2); border-left: 1px solid rgba(255,255,255,.2); border-bottom: 1px solid rgba(255,255,255,.2); }
   .exam-record-detail { padding-bottom: 58px; }.exam-record-mast { grid-template-columns: 1fr; padding-top: 44px; }.exam-record-mast h1 { font-size: 39px; }.exam-record-mast > aside { order: 3; }.exam-record-mast > p { grid-column: 1; }.exam-record-layout { grid-template-columns: 1fr; gap: 38px; padding-top: 28px; }.exam-record-copy { font-size: 15px; }.exam-record-sidebar { order: 2; }.exam-record-copy h2, .exam-manual-copy h2 { font-size: 26px; }
   .exam-manual { padding: 46px 0 62px; }.exam-manual > header { grid-template-columns: 1fr; }.exam-manual > header h1 { font-size: 39px; }.exam-manual > header > div { grid-column: 1; grid-row: auto; }.exam-manual-grid { grid-template-columns: 1fr; gap: 32px; padding-top: 30px; }.exam-manual-grid > aside { position: static; }.exam-manual-copy { font-size: 15px; }
+}
+
+@media (max-width: 360px) {
+  .exam-briefing-grid h1 { font-size: 32px; }
 }
